@@ -1,0 +1,238 @@
+#/bin/bash
+
+# Color function
+# Parameters:
+#    - $1: color number
+#    - $2: message
+#    - $3: newline
+function color_msg
+{
+	echo -e $3 "\033[1;$1m$2\033[0m"
+}
+
+# Check if the given node exists in conn.data. If not, exit with error code 1.
+function check_node()
+{
+	# Check if the node is existed.
+	check=$(cat $HOME/conn.data | grep -c node$1)
+
+	if [ "$check" == "0" ]; then
+		color_msg 31 "Unrecognized destination!"
+		exit 1
+	fi
+}
+
+# Parse conn.data to retrieve node's IP according to the given node number
+function find_node_ip()
+{
+	check_node $1
+
+	cmd="cat $HOME/conn.data | grep $1 | awk -F \"_\" {'print \$2'} | awk -F \"@\" {'print \$2'}"
+	ip=$(eval $cmd)
+	echo $ip
+}
+
+# Parse conn.dta to retrieve the node which is user@ip.
+function find_node()
+{
+	check_node $1
+
+	cmd="cat $HOME/conn.data | grep node$1 | awk -F \"_\" {'print \$2'}"
+	node=$(eval $cmd)
+
+	echo $node
+}
+
+# Display all of the remote sites defined in conn.data
+function display_site()
+{
+	color=32
+
+	while read line
+	do
+		nodeNUM=`echo $line | awk -F "_"  {'print $1'} | awk -F "node" {'print $2'}`
+		nodeName=`echo $line | awk -F "_" {'print $3'}`
+		nodeIP=`echo $line | awk -F "_" {'print $2'} | awk -F "@" {'print $2'}`
+		color_msg $color "$nodeNUM $nodeName($nodeIP)"
+		color=$((color+1))
+		if [ $color -eq 37 ]; then
+			color=32
+		fi
+	done < $HOME/conn.data
+}
+
+
+function scp_function()
+{
+	echo "TODO: scp"
+}
+
+# This function will regiester local's public key (id_rsa.pub) to the remote site.
+function reg_function()
+{
+	if [ -z $1 ]; then
+		echo "Register public key to remote site"
+		echo "Usage: conn r num pwd"
+		echo "   - num: the number of node"
+		echo "   - pwd: the password to login the remote site"
+		exit 0
+	fi
+
+	# Check if have id_rsa.pub
+	if [ ! -f "$HOME/.ssh/id_rsa.pub" ]; then
+		color_msg 31 "No public key found. Please generate your key-pair first."
+		exit 1
+	fi
+
+	node_ip=$(find_node_ip "$1")
+
+	python /usr/local/bin/regkey.py $node_ip
+
+	if [ $? == 0 ]; then
+		color_msg 33 "Register public key to $1 successfully."
+	else
+		color_msg 31 "Register public key to $1 failed."
+	fi
+}
+
+function add_node_to_num()
+{
+	inserted=0
+	i=2
+	add_line="node$1_$2_$3"
+	rm -rf $HOME/conn.data.tmp
+
+	while read line; do
+		echo $line >> $HOME/conn.data.tmp
+
+		if [ "$i" -eq "$1" ]; then
+			echo $add_line >> $HOME/conn.data.tmp
+			inserted=1
+		fi
+
+		i=$((i+1))
+	done < "$HOME/conn.data"
+
+	if [ "$inserted" -eq 0 ]; then
+		echo $add_line >> $HOME/conn.data.tmp
+	fi
+
+	mv $HOME/conn.data.tmp $HOME/conn.data
+	display_site
+	exit 0
+}
+
+# Read suitable number for insertion.
+function find_insert_num()
+{
+	i=1
+	while read line; do
+		cmd="echo $line | awk -F \"_\" {'print \$1'}"
+		line_num=$(eval $cmd)
+
+		if [[ "$line_num" -ne "node$i" ]]; then
+			echo $i
+			return 0
+		fi
+
+		i=$((i+1))
+	done < "$HOME/conn.data"
+
+	echo $i
+	return 0
+}
+
+function add_node()
+{
+	if [ -z "$1" ]; then
+		color_msg 31 "No arguments. Please input at least 'user@ip'."
+		exit 1
+	fi
+
+	display_site
+
+	num=$(find_insert_num)
+
+	echo -e
+
+	while true; do
+		read -p "Add this node to entry $num (y/n)" yn
+		case $yn in
+			[Yy]* ) add_node_to_num "$num" "$1" "$2";;
+			[Nn]* ) read -p "Input your number:" un
+					add_node_to_num $un "$1" "$2";;
+			* ) echo "Please answer y or a number you want to add";;
+		esac
+	done
+}
+
+# Display the usage of 'conn' command
+function display_usage()
+{
+	color_msg 38 "Usage: conn " -n
+	color_msg 32 "<num|l|c|r|a|d>" -n
+	color_msg 33 " [args]"
+	color_msg 32 "   - num: SSH to node #num"
+	color_msg 32 "   - l: list all nodes"
+	color_msg 32 "   - c: <conn c num> scp file to the node of #num."
+	color_msg 32 "   - r: <conn r num> register public key to to the node of #num."
+	color_msg 32 "   - a: conn a <user@ip> [\"Description\"]"
+	color_msg 32 "   - d: conn d <num>: delete node #num"
+}
+
+# Delete the given node
+function del_node()
+{
+	if [ -z "$1" ]; then
+		display_site
+
+		echo -e
+		color_msg 31 "Please give a number. (For example, 'conn d 3')"
+		exit 0
+	fi
+
+	rm -rf $HOME/conn.data.tmp
+
+	while read line; do
+		cmd="echo $line | awk -F \"_\" {'print \$1'}"
+		num=$(eval $cmd)
+
+		if [ "node$1" != "$num" ]; then
+			echo $line >> $HOME/conn.data.tmp
+		fi
+	done < "$HOME/conn.data"
+
+	mv $HOME/conn.data.tmp $HOME/conn.data
+
+	echo -e
+	display_site
+}
+
+if [ -z "$1" ]; then
+	display_usage
+else
+	case "$1" in
+		[l] )
+			echo -e
+			color_msg 38 "=====Nodes====="
+			display_site
+			color_msg 38 "==============="
+			exit 0;;
+		[a] )
+			add_node "$2" "$3"
+			exit 0;;
+		[d] )
+			del_node "$2"
+			exit 0;;
+		[s] )
+			scp_function $2 $3 $4
+			exit 0;;
+		[r] )
+			reg_function $2 $3
+			;;
+	esac
+
+	node=$(find_node "$1")
+	echo $node
+	ssh $2 $node
+fi
