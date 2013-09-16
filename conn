@@ -194,8 +194,8 @@ function del_node()
 	rm -rf $HOME/conn.data.tmp
 
 	while read line; do
-		cmd="echo $line | awk -F \"_\" {'print \$1'}"
-		num=$(eval $cmd)
+		cmd="echo \"$line\" | awk -F \"_\" {'print \$1'}"
+		num=`eval $cmd`
 
 		if [ "node$1" != "$num" ]; then
 			echo $line >> $HOME/conn.data.tmp
