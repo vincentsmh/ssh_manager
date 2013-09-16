@@ -130,7 +130,7 @@ function find_insert_num()
 		cmd="echo $line | awk -F \"_\" {'print \$1'}"
 		line_num=$(eval $cmd)
 
-		if [[ "$line_num" -ne "node$i" ]]; then
+		if [[ "$line_num" != "node$i" ]]; then
 			echo $i
 			return 0
 		fi
