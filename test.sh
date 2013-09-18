@@ -1,1 +1,0 @@
-echo $SUDO_USER
