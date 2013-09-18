@@ -2,7 +2,7 @@ DEPLOY_FOLDER="/usr/local/bin"
 FILES="conn"
 
 mkdir -p $DEPLOY_FOLDER
-touch $HOME/conn.data
+su $SUDO_USER -c "touch $HOME/conn.data"
 
 for file in $FILES;
 do

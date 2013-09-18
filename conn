@@ -214,7 +214,7 @@ else
 	case "$1" in
 		[l] )
 			echo -e
-			color_msg 38 "=====Nodes====="
+			color_msg 38 "=====Sites====="
 			display_site
 			color_msg 38 "==============="
 			exit 0;;
