@@ -202,7 +202,12 @@ function del_node()
 		fi
 	done < "$HOME/conn.data"
 
-	mv $HOME/conn.data.tmp $HOME/conn.data
+	if [ -f $HOME/conn.data.tmp ]; then
+		mv $HOME/conn.data.tmp $HOME/conn.data
+	else
+		rm -rf $HOME/conn.data
+		touch $HOME/conn.data
+	fi
 
 	echo -e
 	display_site
