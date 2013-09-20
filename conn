@@ -197,21 +197,30 @@ function display_usage()
 # Delete the given node
 function del_node()
 {
-	if [ -z "$1" ]; then
+	if [ -z "$2" ]; then
 		display_site
 
 		echo -e
-		color_msg 31 "Please give a number. (For example, 'conn d 3')"
+		color_msg 38 "Usage: conn d [num1 num2 num3 ...]"
 		exit 0
 	fi
 
 	rm -rf $HOME/conn.data.tmp
 
-	while read line; do
+	while read line
+	do
 		cmd="echo \"$line\" | awk -F \"_\" {'print \$1'}"
 		num=`eval $cmd`
 
-		if [ "node$1" != "$num" ]; then
+		exist=0
+		for node in $@
+		do
+			if [ "node$node" == "$num" ]; then
+				exist=1
+			fi
+		done
+
+		if [ $exist -eq 0 ]; then
 			echo $line >> $HOME/conn.data.tmp
 		fi
 	done < "$HOME/conn.data"
@@ -250,7 +259,7 @@ else
 			add_node "$2" "$3"
 			exit 0;;
 		[d] )
-			del_node "$2"
+			del_node $@
 			exit 0;;
 		[s] )
 			scp_function $2 $3 $4
