@@ -23,13 +23,23 @@ function check_node()
 }
 
 # Parse conn.data to retrieve node's IP according to the given node number
-function find_node_ip()
+function find_ip()
 {
 	check_node $1
 
 	cmd="cat $HOME/conn.data | grep $1 | awk -F \"_\" {'print \$2'} | awk -F \"@\" {'print \$2'}"
 	ip=$(eval $cmd)
 	echo $ip
+}
+
+# Parse conn.data to retrieve user according to the given node number
+function find_user()
+{
+	check_node $1
+
+	cmd="cat $HOME/conn.data | grep $1 | awk -F \"_\" {'print \$2'} | awk -F \"@\" {'print \$1'}"
+	user=$(eval $cmd)
+	echo $user
 }
 
 # Parse conn.dta to retrieve the node which is user@ip.
@@ -68,30 +78,34 @@ function scp_function()
 }
 
 # This function will regiester local's public key (id_rsa.pub) to the remote site.
-function reg_function()
+function reg_key()
 {
-	if [ -z $1 ]; then
-		echo "Register public key to remote site"
+	if [ -z $1 ] || [ -z $2 ]; then
+		echo "Register public key to the remote site"
 		echo "Usage: conn r num pwd"
-		echo "   - num: the number of node"
+		echo "   - num: the number of the site"
 		echo "   - pwd: the password to login the remote site"
 		exit 0
 	fi
 
 	# Check if have id_rsa.pub
-	if [ ! -f "$HOME/.ssh/id_rsa.pub" ]; then
+	pk="$HOME/.ssh/id_rsa.pub"
+	if [ ! -f $pk ]; then
 		color_msg 31 "No public key found. Please generate your key-pair first."
-		exit 1
+		exit 0
 	fi
 
-	node_ip=$(find_node_ip "$1")
+	ip=$(find_ip "$1")
+	user=$(find_user "$1")
 
-	python /usr/local/bin/regkey.py $node_ip
+	python /usr/local/bin/regkey.py $ip $user $2 $pk
 
-	if [ $? == 0 ]; then
-		color_msg 33 "Register public key to $1 successfully."
+	if [ $? -eq 0 ]; then
+		echo -e
+		color_msg 32 "Register public key to $ip successfully."
 	else
-		color_msg 31 "Register public key to $1 failed."
+		echo -e
+		color_msg 31 "Register public key to $ip failed."
 	fi
 }
 
@@ -213,6 +227,15 @@ function del_node()
 	display_site
 }
 
+function check_python()
+{
+	check=`whereis python | awk -F " " {'print $2'} | grep -c python`
+	if [ "$check" == "0" ]; then
+		color_msg 31 "Please install \"python\" before you use this function."
+		exit 0
+	fi
+}
+
 if [ -z "$1" ]; then
 	display_usage
 else
@@ -233,8 +256,9 @@ else
 			scp_function $2 $3 $4
 			exit 0;;
 		[r] )
-			reg_function $2 $3
-			;;
+			check_python
+			reg_key $2 $3
+			exit 0;;
 	esac
 
 	node=$(find_node "$1")

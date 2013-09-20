@@ -1,5 +1,5 @@
 DEPLOY_FOLDER="/usr/local/bin"
-FILES="conn"
+FILES="conn regkey.py pexpect.py"
 
 mkdir -p $DEPLOY_FOLDER
 su $SUDO_USER -c "touch $HOME/conn.data"
