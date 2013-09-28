@@ -238,7 +238,7 @@ function del_node()
 
 function check_python()
 {
-	check=`whereis python | awk -F " " {'print $2'} | grep -c python`
+	check=`whereis python | grep -c bin`
 	if [ "$check" == "0" ]; then
 		color_msg 31 "Please install \"python\" before you use this function."
 		exit 0
