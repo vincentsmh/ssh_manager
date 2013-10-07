@@ -46,11 +46,10 @@ function find_user()
 function find_node()
 {
 	check_node $1
-
-	cmd="cat $HOME/conn.data | grep node$1 | awk -F \"_\" {'print \$2'}"
+	cmd="cat $HOME/conn.data | grep node$1_ | awk -F \"_\" {'print \$2'}"
 	node=$(eval $cmd)
-
 	echo $node
+	return 0
 }
 
 # Display all of the remote sites defined in conn.data
