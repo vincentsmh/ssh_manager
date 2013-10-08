@@ -185,12 +185,14 @@ function display_usage()
 	color_msg 38 "Usage: conn " -n
 	color_msg 32 "<num|l|c|r|a|d>" -n
 	color_msg 33 " [args]"
-	color_msg 32 "   - num: SSH to node #num"
-	color_msg 32 "   - l: list all nodes"
-	color_msg 32 "   - c: <conn c num> scp file to the node of #num."
-	color_msg 32 "   - r: <conn r num> register public key to to the node of #num."
+	color_msg 32 "   - num: SSH to site #num"
+	color_msg 32 "   - l: list all sites"
+	color_msg 32 "   - r: conn r num"
+	color_msg 32 "        Register public key to to the site of #num."
 	color_msg 32 "   - a: conn a <user@ip> [\"Description\"]"
+	color_msg 32 "        Add a site to the management list"
 	color_msg 32 "   - d: conn d <num>: delete node #num"
+	color_msg 32 "        Delete the site with #num"
 }
 
 # Delete the given node
