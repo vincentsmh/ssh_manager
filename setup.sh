@@ -1,4 +1,13 @@
-DEPLOY_FOLDER="/usr/local/bin"
+
+# Check the deploy OS is Linux or Mac(Darwin)
+os=`uname`
+
+if [ "$os" == "Linux" ]; then
+	DEPLOY_FOLDER="/usr/local/bin"
+else
+	DEPLOY_FOLDER="/usr/bin"
+fi
+
 FILES="conn regkey.py pexpect.py"
 
 mkdir -p $DEPLOY_FOLDER

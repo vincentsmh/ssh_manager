@@ -11,19 +11,20 @@ function color_msg
 }
 
 # Reorder sites. After the adding/deleting some nodes, it will become disorder.
-function reorder()
+function sort_site()
 {
 	while read line
 	do
-		nodeNUM=`echo $line | awk -F "_"  {'print $1'} | awk -F "node" {'print $2'}`
-		nodeName=`echo $line | awk -F "_" {'print $3'}`
-		nodeIP=`echo $line | awk -F "_" {'print $2'} | awk -F "@" {'print $2'}`
-		color_msg $color "$nodeNUM $nodeName($nodeIP)"
-		color=$((color+1))
-		if [ $color -eq 37 ]; then
-			color=32
-		fi
+		th=$(echo $line | awk -F "_" {'print $1'} | awk -F "node" {'print $2'})
+		line_array[$th]=$line
 	done < $HOME/conn.data
+
+	rm -rf $HOME/conn.data
+
+	for element in "${line_array[@]}"
+	do
+		echo $element >> $HOME/conn.data
+	done
 }
 
 
@@ -74,6 +75,8 @@ function display_site()
 {
 	color=32
 
+	color_msg 38 "=====Sites====="
+
 	while read line
 	do
 		nodeNUM=`echo $line | awk -F "_"  {'print $1'} | awk -F "node" {'print $2'}`
@@ -85,6 +88,8 @@ function display_site()
 			color=32
 		fi
 	done < $HOME/conn.data
+
+	color_msg 38 "==============="
 }
 
 
@@ -173,8 +178,7 @@ function add_node_to_num()
 	fi
 
 	mv $HOME/conn.data.tmp $HOME/conn.data
-	display_site
-	exit 0
+	return 0
 }
 
 # Read suitable number for insertion.
@@ -211,13 +215,20 @@ function add_node()
 	echo -e
 
 	while true; do
-		read -p "Add this node to entry $num (y/n)" yn
+		echo -n "Add this node to entry "
+		color_msg 32 "[$num] " -n
+		read -p "(y/n)" yn
+
 		case $yn in
 			[Yy]* ) add_node_to_num "$num" "$1" "$2";;
 			[Nn]* ) read -p "Input your number:" un
 					add_node_to_num $un "$1" "$2";;
 			* ) echo "Please answer y or a number you want to add";;
 		esac
+
+		if [ $? -eq 0 ]; then
+			break
+		fi
 	done
 }
 
@@ -278,7 +289,6 @@ function del_node()
 	fi
 
 	echo -e
-	display_site
 }
 
 function check_python()
@@ -296,15 +306,17 @@ else
 	case "$1" in
 		[l] )
 			echo -e
-			color_msg 38 "=====Sites====="
 			display_site
-			color_msg 38 "==============="
 			exit 0;;
 		[a] )
 			add_node "$2" "$3"
+			sort_site
+			display_site
 			exit 0;;
 		[d] )
 			del_node $@
+			sort_site
+			display_site
 			exit 0;;
 		[s] )
 			scp_function $2 $3
