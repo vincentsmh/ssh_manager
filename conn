@@ -59,7 +59,7 @@ function find_user()
 	echo $user
 }
 
-# Parse conn.dta to retrieve the node which is user@ip.
+# Parse conn.data to retrieve the node which is user@ip.
 function find_node()
 {
 	check_node $1
@@ -88,9 +88,25 @@ function display_site()
 }
 
 
+# Secure copy file to the remote site.
 function scp_function()
 {
-	echo "TODO: scp"
+	if [ -z $1 ] || [ -z $2 ]; then
+		color_msg 32 "Secure copy file to the remote site"
+		color_msg 32 "Usage: conn s num file"
+		color_msg 32 "   - num: the number of the site"
+		color_msg 32 "   - file: the file you want to copy to the remote site"
+		exit 0
+	fi
+
+	user_at_ip=$(find_node $1)
+	scp $2 $user_at_ip:~
+
+	if [ $? -eq 0 ]; then
+		color_msg 32 "Copy file successfull."
+	else
+		color_msg 31 "Copy file failed."
+	fi
 }
 
 
@@ -105,10 +121,10 @@ function find_regkeybin()
 function reg_key()
 {
 	if [ -z $1 ] || [ -z $2 ]; then
-		echo "Register public key to the remote site"
-		echo "Usage: conn r num pwd"
-		echo "   - num: the number of the site"
-		echo "   - pwd: the password to login the remote site"
+		color_msg 32 "Register public key to the remote site"
+		color_msg 32 "Usage: conn r num pwd"
+		color_msg 32 "   - num: the number of the site"
+		color_msg 32 "   - pwd: the password to login the remote site"
 		exit 0
 	fi
 
@@ -213,12 +229,14 @@ function display_usage()
 	color_msg 33 " [args]"
 	color_msg 32 "   - num: SSH to site #num"
 	color_msg 32 "   - l: list all sites"
-	color_msg 32 "   - r: conn r num"
+	color_msg 32 "   - r: conn r site_num password"
 	color_msg 32 "        Register public key to to the site of #num."
-	color_msg 32 "   - a: conn a <user@ip> [\"Description\"]"
+	color_msg 32 "   - a: conn a user@ip \"Description to adding site.\""
 	color_msg 32 "        Add a site to the management list"
-	color_msg 32 "   - d: conn d <num>: delete node #num"
+	color_msg 32 "   - d: conn d num"
 	color_msg 32 "        Delete the site with #num"
+	color_msg 32 "   - s: conn s num file"
+	color_msg 32 "        scp file f to site #num."
 }
 
 # Delete the given node
@@ -289,7 +307,7 @@ else
 			del_node $@
 			exit 0;;
 		[s] )
-			scp_function $2 $3 $4
+			scp_function $2 $3
 			exit 0;;
 		[r] )
 			check_python
