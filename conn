@@ -10,6 +10,23 @@ function color_msg
 	echo -e $3 "\033[1;$1m$2\033[0m"
 }
 
+# Reorder sites. After the adding/deleting some nodes, it will become disorder.
+function reorder()
+{
+	while read line
+	do
+		nodeNUM=`echo $line | awk -F "_"  {'print $1'} | awk -F "node" {'print $2'}`
+		nodeName=`echo $line | awk -F "_" {'print $3'}`
+		nodeIP=`echo $line | awk -F "_" {'print $2'} | awk -F "@" {'print $2'}`
+		color_msg $color "$nodeNUM $nodeName($nodeIP)"
+		color=$((color+1))
+		if [ $color -eq 37 ]; then
+			color=32
+		fi
+	done < $HOME/conn.data
+}
+
+
 # Check if the given node exists in conn.data. If not, exit with error code 1.
 function check_node()
 {
@@ -27,7 +44,7 @@ function find_ip()
 {
 	check_node $1
 
-	cmd="cat $HOME/conn.data | grep $1 | awk -F \"_\" {'print \$2'} | awk -F \"@\" {'print \$2'}"
+	cmd="cat $HOME/conn.data | grep node$1 | awk -F \"_\" {'print \$2'} | awk -F \"@\" {'print \$2'}"
 	ip=$(eval $cmd)
 	echo $ip
 }
@@ -37,7 +54,7 @@ function find_user()
 {
 	check_node $1
 
-	cmd="cat $HOME/conn.data | grep $1 | awk -F \"_\" {'print \$2'} | awk -F \"@\" {'print \$1'}"
+	cmd="cat $HOME/conn.data | grep node$1 | awk -F \"_\" {'print \$2'} | awk -F \"@\" {'print \$1'}"
 	user=$(eval $cmd)
 	echo $user
 }
@@ -76,6 +93,14 @@ function scp_function()
 	echo "TODO: scp"
 }
 
+
+function find_regkeybin()
+{
+	bin=$(whereis regkey.py)
+	echo $bin
+}
+
+
 # This function will regiester local's public key (id_rsa.pub) to the remote site.
 function reg_key()
 {
@@ -97,7 +122,8 @@ function reg_key()
 	ip=$(find_ip "$1")
 	user=$(find_user "$1")
 
-	python /usr/local/bin/regkey.py $ip $user $2 $pk
+	reg_bin=$(find_regkeybin)
+	python $reg_bin $ip $user $2 $pk
 
 	if [ $? -eq 0 ]; then
 		echo -e
