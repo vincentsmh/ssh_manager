@@ -132,7 +132,7 @@ function display_site()
 		nodeNUM=`echo $line | awk -F "_"  {'print $1'} | awk -F "node" {'print $2'}`
 		nodeName=`echo $line | awk -F "_" {'print $3'}`
 		nodeUserIP=`echo $line | awk -F "_" {'print $2'}`
-		space=$(get_space $nodeUserIP $max_userip_len)
+		space=$(get_space "$nodeUserIP" $max_userip_len)
 		color_msg $color "$nodeNUM $nodeUserIP$space$nodeName"
 		color=$((color+1))
 		if [ $color -eq 37 ]; then
