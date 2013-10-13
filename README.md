@@ -9,7 +9,7 @@ python
 
 Install
 ==========
-sudo sh setup.sh
+sudo bash setup.sh
 
 How to use
 ==========
