@@ -28,3 +28,4 @@ Usage: conn <num|l|c|r|a|d> [args]
    - s: conn s num file
 
     scp file f to site #num.
+   - rn: reorder all sites.

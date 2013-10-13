@@ -10,15 +10,21 @@ function color_msg
 	echo -e $3 "\033[1;$1m$2\033[0m"
 }
 
-# Reorder sites. After the adding/deleting some nodes, it will become disorder.
-function sort_site()
+
+function read_line_array()
 {
 	while read line
 	do
 		th=$(echo $line | awk -F "_" {'print $1'} | awk -F "node" {'print $2'})
 		line_array[$th]=$line
 	done < $HOME/conn.data
+}
 
+
+# Reorder sites. After the adding/deleting some nodes, it will become disorder.
+function sort_site()
+{
+	read_line_array
 	rm -rf $HOME/conn.data
 
 	for element in "${line_array[@]}"
@@ -73,6 +79,9 @@ function find_node()
 # Display all of the remote sites defined in conn.data
 function display_site()
 {
+	# If no data file, touch an empty one.
+	touch $HOME/conn.data
+
 	color=32
 
 	color_msg 38 "=====Sites====="
@@ -248,6 +257,7 @@ function display_usage()
 	color_msg 32 "        Delete the site with #num"
 	color_msg 32 "   - s: conn s num file"
 	color_msg 32 "        scp file f to site #num."
+	color_msg 32 "   - rn: reorder all sites."
 }
 
 # Delete the given node
@@ -291,6 +301,7 @@ function del_node()
 	echo -e
 }
 
+
 function check_python()
 {
 	check=`whereis python | grep -c bin`
@@ -299,6 +310,32 @@ function check_python()
 		exit 0
 	fi
 }
+
+
+function get_numofsite()
+{
+	numofsite=$(cat $HOME/conn.data | wc -l)
+	echo $numofsite
+}
+
+function renumber_sites()
+{
+	read_line_array
+	numofsite=$(get_numofsite)
+	rm -rf $HOME/conn.data
+
+	i=1
+	for line in "${line_array[@]}"
+	do
+		node_idx="node$i"
+		field2=$(echo $line | awk -F "_" {'print $2'})
+		field3=$(echo $line | awk -F "_" {'print $3'})
+		out_line="$node_idx"_"$field2"_"$field3"
+		echo $out_line >> $HOME/conn.data
+		i=$(($i+1))
+	done
+}
+
 
 if [ -z "$1" ]; then
 	display_usage
@@ -324,6 +361,9 @@ else
 		[r] )
 			check_python
 			reg_key $2 $3
+			exit 0;;
+		rn )
+			renumber_sites
 			exit 0;;
 	esac
 
