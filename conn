@@ -76,27 +76,69 @@ function find_node()
 	return 0
 }
 
+
+function get_maxlen()
+{
+	max_len=0
+	for line in "${line_array[@]}"
+	do
+		nodeUserIP=`echo $line | awk -F "_" {'print $2'}`
+		len=$(echo $nodeUserIP | wc -c)
+
+		if [ $len -gt $max_len ]; then
+			max_len=$len
+		fi
+	done
+
+	echo $max_len
+}
+
+
+function get_space()
+{
+	len=$(echo $1 | wc -c)
+	space_len=$(($2 - $len))
+	echo $space_len >> $HOME/test.log
+
+	if [ $space_len -eq 0 ]; then
+		echo " "
+		return 0
+	fi
+
+	space=" "
+	for ((i=0;i<$space_len;i++))
+	do
+		space=$(echo "$space ")
+	done
+
+	echo "$space"
+}
+
+
 # Display all of the remote sites defined in conn.data
 function display_site()
 {
 	# If no data file, touch an empty one.
 	touch $HOME/conn.data
-
 	color=32
-
 	color_msg 38 "=====Sites====="
 
-	while read line
+	read_line_array
+	max_userip_len=$(get_maxlen)
+	echo $max_userip_len >> $HOME/test.log
+
+	for line in "${line_array[@]}"
 	do
 		nodeNUM=`echo $line | awk -F "_"  {'print $1'} | awk -F "node" {'print $2'}`
 		nodeName=`echo $line | awk -F "_" {'print $3'}`
-		nodeIP=`echo $line | awk -F "_" {'print $2'} | awk -F "@" {'print $2'}`
-		color_msg $color "$nodeNUM $nodeName($nodeIP)"
+		nodeUserIP=`echo $line | awk -F "_" {'print $2'}`
+		space=$(get_space $nodeUserIP $max_userip_len)
+		color_msg $color "$nodeNUM $nodeUserIP$space$nodeName"
 		color=$((color+1))
 		if [ $color -eq 37 ]; then
 			color=32
 		fi
-	done < $HOME/conn.data
+	done
 
 	color_msg 38 "==============="
 }
