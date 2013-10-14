@@ -237,8 +237,8 @@ function find_insert_num()
 {
 	i=1
 	while read line; do
-		cmd="echo $line | awk -F \"_\" {'print \$1'}"
-		line_num=$(eval $cmd)
+		cmd="echo \"$line\" | awk -F \"_\" {'print \$1'}"
+		line_num=$(eval "$cmd")
 
 		if [[ "$line_num" != "node$i" ]]; then
 			echo $i
