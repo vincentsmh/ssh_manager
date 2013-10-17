@@ -168,7 +168,7 @@ function scp_function()
 
 function find_regkeybin()
 {
-	bin=$(whereis regkey.py)
+	bin=$(whereis regkey.py | awk {'print $2'})
 	echo $bin
 }
 
