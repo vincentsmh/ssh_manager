@@ -82,8 +82,13 @@ function get_maxlen()
 	max_len=0
 	for line in "${line_array[@]}"
 	do
-		nodeUserIP=`echo $line | awk -F "_" {'print $2'}`
-		len=$(echo $nodeUserIP | wc -c)
+		if [ "$1" == "GET_USERIP" ]; then
+			data=`echo $line | awk -F "_" {'print $2'}`
+		elif [ "$1" == "GET_ID" ]; then
+			data=`echo $line | awk -F "_" {'print $1'} | awk -F "node" {'print $2'}`
+		fi
+
+		len=$(echo $data | wc -c)
 
 		if [ $len -gt $max_len ]; then
 			max_len=$len
@@ -98,7 +103,6 @@ function get_space()
 {
 	len=$(echo $1 | wc -c)
 	space_len=$(($2 - $len))
-	echo $space_len >> $HOME/test.log
 
 	if [ $space_len -eq 0 ]; then
 		echo " "
@@ -124,16 +128,17 @@ function display_site()
 	color_msg 38 "=====Sites====="
 
 	read_line_array
-	max_userip_len=$(get_maxlen)
-	echo $max_userip_len >> $HOME/test.log
+	max_userip_len=$(get_maxlen "GET_USERIP")
+	max_id_len=$(get_maxlen "GET_ID")
 
 	for line in "${line_array[@]}"
 	do
 		nodeNUM=`echo $line | awk -F "_"  {'print $1'} | awk -F "node" {'print $2'}`
 		nodeName=`echo $line | awk -F "_" {'print $3'}`
 		nodeUserIP=`echo $line | awk -F "_" {'print $2'}`
+		space_id=$(get_space "$nodeNUM" $max_id_len)
 		space=$(get_space "$nodeUserIP" $max_userip_len)
-		color_msg $color "$nodeNUM $nodeUserIP$space$nodeName"
+		color_msg $color "$nodeNUM$space_id$nodeUserIP$space$nodeName"
 		color=$((color+1))
 		if [ $color -eq 37 ]; then
 			color=32
