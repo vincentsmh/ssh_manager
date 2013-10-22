@@ -148,20 +148,32 @@ function display_site()
 	color_msg 38 "==============="
 }
 
+function display_scp()
+{
+	color_msg 32 "   - s: conn s file num1 [num2] [...]"
+	color_msg 35 "        s" -n
+	color_msg 32 "cp " -n
+	color_msg 35 "file " -n
+	color_msg 32 "to site " -n
+	color_msg 35 "num1, num2, ...."
+}
 
 # Secure copy file to the remote site.
 function scp_function()
 {
 	if [ -z $1 ] || [ -z $2 ]; then
-		color_msg 32 "Secure copy file to the remote site"
-		color_msg 32 "Usage: conn s num file"
-		color_msg 32 "   - num: the number of the site"
-		color_msg 32 "   - file: the file you want to copy to the remote site"
+		display_scp
 		exit 0
 	fi
 
-	user_at_ip=$(find_node $1)
-	scp $2 $user_at_ip:~
+	file=$2
+	shift 2
+
+	for node in $@
+	do
+		user_at_ip=$(find_node $node)
+		scp $file $user_at_ip:~
+	done
 
 	if [ $? -eq 0 ]; then
 		color_msg 32 "Copy file successfull."
@@ -292,7 +304,7 @@ function add_node()
 function display_usage()
 {
 	color_msg 38 "Usage: conn " -n
-	color_msg 32 "<num|l|c|r|a|d>" -n
+	color_msg 32 "<num|l|r|a|d|s|rn>" -n
 	color_msg 33 " [args]"
 	color_msg 32 "   - num: SSH to site #num"
 	color_msg 32 "   - l: list all sites"
@@ -302,8 +314,7 @@ function display_usage()
 	color_msg 32 "        Add a site to the management list"
 	color_msg 32 "   - d: conn d num"
 	color_msg 32 "        Delete the site with #num"
-	color_msg 32 "   - s: conn s num file"
-	color_msg 32 "        scp file f to site #num."
+	display_scp
 	color_msg 32 "   - rn: reorder all sites."
 }
 
@@ -403,7 +414,7 @@ else
 			display_site
 			exit 0;;
 		[s] )
-			scp_function $2 $3
+			scp_function $@
 			exit 0;;
 		[r] )
 			check_python
