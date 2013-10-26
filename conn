@@ -76,28 +76,48 @@ function find_node()
 	return 0
 }
 
-
 function get_maxlen()
 {
-	max_len=0
+	DEFAULT_ID_LEN=3
+	DEFAULT_USERIP_LEN=7
+	DEFAULT_DESCRIPT_LEN=11
+	max_userip_len=0
+	max_id_len=0
+	max_desc_len=0
+
 	for line in "${line_array[@]}"
 	do
-		if [ "$1" == "GET_USERIP" ]; then
-			data=`echo $line | awk -F "_" {'print $2'}`
-		elif [ "$1" == "GET_ID" ]; then
-			data=`echo $line | awk -F "_" {'print $1'} | awk -F "node" {'print $2'}`
+		len_userip=`echo $line | awk -F "_" {'print $2'} | wc -c`
+		len_id=`echo $line | awk -F "_" {'print $1'} | awk -F "node" {'print $2'} | wc -c`
+		len_desc=`echo $line | awk -F "_" {'print $3'} | wc -c`
+
+		if [ $len_userip -gt $max_userip_len ]; then
+			max_userip_len=$len_userip
 		fi
 
-		len=$(echo $data | wc -c)
+		if [ $len_id -gt $max_id_len ]; then
+			max_id_len=$len_id
+		fi
 
-		if [ $len -gt $max_len ]; then
-			max_len=$len
+		if [ $len_desc -gt $max_desc_len ]; then
+			max_desc_len=$len_desc
 		fi
 	done
 
-	echo $max_len
-}
+	if [ $DEFAULT_ID_LEN -gt $max_id_len ]; then
+		max_id_len = $DEFAULT_ID_LEN
+	fi
 
+	if [ $DEFAULT_USERIP_LEN -gt $max_userip_len ]; then
+		max_userip_len = $DEFAULT_USERIP_LEN
+	fi
+
+	if [ $DEFAULT_DESCRIPT_LEN -gt $max_desc_len ]; then
+		max_desc_len = $DEFAULT_DESC_LEN
+	fi
+
+	return 0
+}
 
 function get_space()
 {
@@ -118,18 +138,73 @@ function get_space()
 	echo "$space"
 }
 
+function print_dash()
+{
+	echo -n "+"
+	for ((i=0;i<=$1;i++))
+	do
+		echo -n "-"
+	done
+	echo -n "+"
+
+	for ((i=0;i<=$2;i++))
+	do
+		echo -n "-"
+	done
+	echo -n "+"
+
+	for ((i=0;i<=$3;i++))
+	do
+		echo -n "-"
+	done
+	echo "+"
+}
+
+# Print table's head and tail
+# Input:
+#   $1->option: head/tail
+#   $1->max_id_len
+#   $2->max_userip_len
+#   $3->max_desc_len
+function print_head_tail()
+{
+	TITLE_NUM="NO"
+	TITLE_USERIP="user@IP"
+	TITLE_DESCRIPT="Description"
+
+	print_dash $2 $3 $4
+
+	if [ "$1" == "head" ];then
+		space_id=$(get_space "$TITLE_NUM" $max_id_len)
+		space_userip=$(get_space "$TITLE_USERIP" $max_userip_len)
+		space_desc=$(get_space "$TITLE_DESCRIPT" $max_desc_len)
+
+		color_msg 37 "| " -n
+		color_msg 37 "$TITLE_NUM$space_id" -n
+		color_msg 37 "| " -n
+		color_msg 37 "$TITLE_USERIP$space_userip" -n
+		color_msg 37 "| " -n
+		color_msg 37 "$TITLE_DESCRIPT$space_desc" -n
+		color_msg 37 "|"
+
+		print_dash $2 $3 $4
+	fi
+
+}
 
 # Display all of the remote sites defined in conn.data
 function display_site()
 {
+
 	# If no data file, touch an empty one.
 	touch $HOME/conn.data
 	color=32
-	color_msg 38 "=====Sites====="
 
 	read_line_array
-	max_userip_len=$(get_maxlen "GET_USERIP")
-	max_id_len=$(get_maxlen "GET_ID")
+	get_maxlen
+
+	# Print table head
+	print_head_tail "head" $max_id_len $max_userip_len $max_desc_len
 
 	for line in "${line_array[@]}"
 	do
@@ -137,15 +212,23 @@ function display_site()
 		nodeName=`echo $line | awk -F "_" {'print $3'}`
 		nodeUserIP=`echo $line | awk -F "_" {'print $2'}`
 		space_id=$(get_space "$nodeNUM" $max_id_len)
-		space=$(get_space "$nodeUserIP" $max_userip_len)
-		color_msg $color "$nodeNUM$space_id$nodeUserIP$space$nodeName"
+		space_userip=$(get_space "$nodeUserIP" $max_userip_len)
+		space_desc=$(get_space "$nodeName" $max_desc_len)
+
+		color_msg 37 "| " -n
+		color_msg $color "$nodeNUM$space_id" -n
+		color_msg 37 "| " -n
+		color_msg $color "$nodeUserIP$space_userip" -n
+		color_msg 37 "| " -n
+		color_msg $color "$nodeName$space_desc" -n
+		color_msg 37 "|"
 		color=$((color+1))
 		if [ $color -eq 37 ]; then
 			color=32
 		fi
 	done
 
-	color_msg 38 "==============="
+	print_head_tail "tail" $max_id_len $max_userip_len $max_desc_len
 }
 
 function display_scp()
@@ -172,7 +255,7 @@ function scp_function()
 	for node in $@
 	do
 		user_at_ip=$(find_node $node)
-		scp $file $user_at_ip:~
+		scp -r $file $user_at_ip:~
 	done
 
 	if [ $? -eq 0 ]; then
