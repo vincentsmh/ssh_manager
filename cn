@@ -231,16 +231,6 @@ function display_site()
 	print_head_tail "tail" $max_id_len $max_userip_len $max_desc_len
 }
 
-function display_scp()
-{
-	color_msg 32 "   - s: conn s file num1 [num2] [...]"
-	color_msg 35 "        s" -n
-	color_msg 32 "cp " -n
-	color_msg 35 "file " -n
-	color_msg 32 "to site " -n
-	color_msg 35 "num1, num2, ...."
-}
-
 # Secure copy file to the remote site.
 function scp_function()
 {
@@ -383,22 +373,59 @@ function add_node()
 	done
 }
 
-# Display the usage of 'conn' command
+# Display author information
+function display_author()
+{
+	color_msg 38 "This utility is created by " -n
+	color_msg 36 "Vincent Shi-Ming Huang."
+	color_msg 38 "If you have any problem or you hit some issue/bug, please send your comment to " -n
+	color_msg 36 "Vincent.SM.Huang@gmail.com"
+	color_msg 38 "http://vincent-smh.appspot.com"
+}
+
+# Display the usage of 'cn' command
 function display_usage()
 {
-	color_msg 38 "Usage: conn " -n
+	echo -e
+	color_msg 38 "Usage: cn " -n
 	color_msg 32 "<num|l|r|a|d|s|rn>" -n
 	color_msg 33 " [args]"
-	color_msg 32 "   - num: SSH to site #num"
-	color_msg 32 "   - l: list all sites"
-	color_msg 32 "   - r: conn r site_num password"
-	color_msg 32 "        Register public key to to the site of #num."
-	color_msg 32 "   - a: conn a user@ip \"Description to adding site.\""
-	color_msg 32 "        Add a site to the management list"
-	color_msg 32 "   - d: conn d num"
-	color_msg 32 "        Delete the site with #num"
-	display_scp
-	color_msg 32 "   - rn: reorder all sites."
+	color_msg 38 "   - " -n
+	color_msg 32 "num" -n
+	color_msg 38 ": SSH to site #num."
+	color_msg 38 "          ex. cn 2"
+
+	color_msg 38 "   - " -n
+	color_msg 32 "l" -n
+	color_msg 38 ": list all sites."
+
+	color_msg 38 "   - " -n
+	color_msg 32 "r" -n
+	color_msg 38 ": Register public key to site #num. "
+	color_msg 38 "        ex: cn r 3 password"
+
+	color_msg 38 "   - " -n
+	color_msg 32 "a" -n
+	color_msg 38 ": Add a new site."
+	color_msg 38 "        ex: cn a user@127.0.0.1 \"Description of the site.\""
+	color_msg 38 "        ex: cn a \"-p 2222 user@127.0.0.1 \"Description of the site.\" (Assign a port)"
+
+	color_msg 38 "   - " -n
+	color_msg 32 "d" -n
+	color_msg 38 ": Delete a site (num). "
+	color_msg 38 "        ex: cn d 3"
+
+	color_msg 38 "   - " -n
+	color_msg 32 "s" -n
+	color_msg 38 ": scp a file/directory to the given site. "
+	color_msg 38 "        ex: cn s file 3"
+
+	color_msg 38 "   - " -n
+	color_msg 32 "rn" -n
+	color_msg 38 ": reorder the number of all sites."
+	echo -e
+	display_author
+	echo -e
 }
 
 # Delete the given node

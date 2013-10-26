@@ -13,19 +13,18 @@ sudo bash setup.sh
 
 How to use
 ==========
-Usage: conn <num|l|c|r|a|d> [args]
-   - num: SSH to site #num
-   - l: list all sites
-   - r: conn r site_num password
+Usage: cn <num|l|r|a|d|s|rn> [args]
 
-     Register public key to to the site of #num.
-   - a: conn a user@ip "Description to adding site."
-
-     Add a site to the management list
-   - d: conn d num
-
-    Delete the site with #num
-   - s: conn s num file
-
-    scp file f to site #num.
-   - rn: reorder all sites.
+- num: SSH to site #num. <br>
+ex. cn 2                                                                                                                                                                
+- l: list all sites.
+- r: Register public key to site #num. <br>
+ex: cn r 3 password
+- a: Add a new site. <br>
+ex: cn a user@127.0.0.1 "Description of the site." <br>
+ex: cn a "-p 2222 user@127.0.0.1 "Description of the site." (Assign a port)
+- d: Delete a site (num). <br>
+ex: cn d 3 
+- s: scp a file/directory to the given site. <br>
+ex: cn s file 3
+- rn: reorder the number of all sites.
