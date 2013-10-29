@@ -10,48 +10,80 @@ function color_msg
 	echo -e $3 "\033[1;$1m$2\033[0m"
 }
 
-
-function read_line_array()
+function check_n_exit()
 {
-	while read line
+	if [ ! $1 -eq 0 ]; then
+		color_msg 31 "$2"
+
+		exit 1
+	fi
+}
+
+# Read all sites data into 'sites'
+function read_sites()
+{
+	num_of_sites=0
+
+	while read site
 	do
-		th=$(echo $line | awk -F "_" {'print $1'} | awk -F "node" {'print $2'})
-		line_array[$th]=$line
+		th=$(echo $site | awk -F "_" {'print $1'} | awk -F "node" {'print $2'})
+		sites[$th]=$site
+		num_of_sites=$(($num_of_sites+1))
 	done < $HOME/conn.data
 }
 
-
-# Reorder sites. After the adding/deleting some nodes, it will become disorder.
-function sort_site()
+function export_to_file()
 {
-	read_line_array
 	rm -rf $HOME/conn.data
 
-	for element in "${line_array[@]}"
+	for site in "${sites[@]}"
 	do
-		echo $element >> $HOME/conn.data
-	done
+		echo $site
+	done > $HOME/conn.data
 }
 
-
 # Check if the given node exists in conn.data. If not, exit with error code 1.
-function check_node()
+# Input:
+#   $1: site number
+#   $2: exit if the site number is not existed.
+# Return:
+#   -1: does not exist
+#   >0: index
+function is_site_exist()
 {
 	# Check if the node is existed.
-	check=$(cat $HOME/conn.data | grep -c node$1)
+	i=1
+	check=0
+
+	for site in "${sites[@]}"
+	do
+		check=$(echo $site | grep -c node$1)
+
+		if [ "$check" != "0" ]; then
+			break
+		fi
+
+		i=$(($i+1))
+	done
 
 	if [ "$check" == "0" ]; then
-		color_msg 31 "Unrecognized destination!"
-		exit 1
+		return -1
+	else
+		return $i
 	fi
 }
 
 # Parse conn.data to retrieve node's IP according to the given node number
 function find_ip()
 {
-	check_node $1
+	is_site_exist $1
+	index=$?
 
-	cmd="cat $HOME/conn.data | grep node$1 | awk -F \"_\" {'print \$2'} | awk -F \"@\" {'print \$2'}"
+	if [ $index -eq -1 ]; then
+		return 1
+	fi
+
+	cmd="echo ${sites[$index]} | awk -F \"_\" {'print \$2'} | awk -F \"@\" {'print \$2'}"
 	ip=$(eval $cmd)
 	echo $ip
 }
@@ -59,18 +91,29 @@ function find_ip()
 # Parse conn.data to retrieve user according to the given node number
 function find_user()
 {
-	check_node $1
+	is_site_exist $1
+	index=$?
 
-	cmd="cat $HOME/conn.data | grep node$1 | awk -F \"_\" {'print \$2'} | awk -F \"@\" {'print \$1'}"
+	if [ $index -eq -1 ]; then
+		return 1
+	fi
+
+	cmd="echo ${sites[$index]} | awk -F \"_\" {'print \$2'} | awk -F \"@\" {'print \$1'}"
 	user=$(eval $cmd)
 	echo $user
 }
 
 # Parse conn.data to retrieve the node which is user@ip.
-function find_node()
+function find_userip()
 {
-	check_node $1
-	cmd="cat $HOME/conn.data | grep node$1_ | awk -F \"_\" {'print \$2'}"
+	is_site_exist $1
+	index=$?
+
+	if [ $index -eq 0 ]; then
+		return 1
+	fi
+
+	cmd="echo ${sites[$index]} | grep node$1_ | awk -F \"_\" {'print \$2'}"
 	node=$(eval $cmd)
 	echo $node
 	return 0
@@ -85,11 +128,11 @@ function get_maxlen()
 	max_id_len=0
 	max_desc_len=0
 
-	for line in "${line_array[@]}"
+	for site in "${sites[@]}"
 	do
-		len_userip=`echo $line | awk -F "_" {'print $2'} | wc -c`
-		len_id=`echo $line | awk -F "_" {'print $1'} | awk -F "node" {'print $2'} | wc -c`
-		len_desc=`echo $line | awk -F "_" {'print $3'} | wc -c`
+		len_userip=`echo $site | awk -F "_" {'print $2'} | wc -c`
+		len_id=`echo $site | awk -F "_" {'print $1'} | awk -F "node" {'print $2'} | wc -c`
+		len_desc=`echo $site | awk -F "_" {'print $3'} | wc -c`
 
 		if [ $len_userip -gt $max_userip_len ]; then
 			max_userip_len=$len_userip
@@ -200,17 +243,16 @@ function display_site()
 	touch $HOME/conn.data
 	color=32
 
-	read_line_array
 	get_maxlen
 
 	# Print table head
 	print_head_tail "head" $max_id_len $max_userip_len $max_desc_len
 
-	for line in "${line_array[@]}"
+	for site in "${sites[@]}"
 	do
-		nodeNUM=`echo $line | awk -F "_"  {'print $1'} | awk -F "node" {'print $2'}`
-		nodeName=`echo $line | awk -F "_" {'print $3'}`
-		nodeUserIP=`echo $line | awk -F "_" {'print $2'}`
+		nodeNUM=`echo $site | awk -F "_"  {'print $1'} | awk -F "node" {'print $2'}`
+		nodeName=`echo $site | awk -F "_" {'print $3'}`
+		nodeUserIP=`echo $site | awk -F "_" {'print $2'}`
 		space_id=$(get_space "$nodeNUM" $max_id_len)
 		space_userip=$(get_space "$nodeUserIP" $max_userip_len)
 		space_desc=$(get_space "$nodeName" $max_desc_len)
@@ -223,12 +265,21 @@ function display_site()
 		color_msg $color "$nodeName$space_desc" -n
 		color_msg 37 "|"
 		color=$((color+1))
-		if [ $color -eq 37 ]; then
+		if [ $color -eq 38 ]; then
 			color=32
 		fi
 	done
 
 	print_head_tail "tail" $max_id_len $max_userip_len $max_desc_len
+	echo -e
+}
+
+function display_scp()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "s" -n
+	color_msg 38 ": scp a file/directory to the given site. "
+	color_msg 38 "        ex: cn s file 3"
 }
 
 # Secure copy file to the remote site.
@@ -244,8 +295,9 @@ function scp_function()
 
 	for node in $@
 	do
-		user_at_ip=$(find_node $node)
-		scp -r $file $user_at_ip:~
+		userip=$(find_userip $node)
+		check_n_exit $? "[$node] does not exist"
+		scp -r $file $userip:~
 	done
 
 	if [ $? -eq 0 ]; then
@@ -282,9 +334,12 @@ function reg_key()
 	fi
 
 	ip=$(find_ip "$1")
+	check_n_exit $? "[$1] does not exist."
 	user=$(find_user "$1")
+	check_n_exit $? "[$1] does not exist."
 
 	reg_bin=$(find_regkeybin)
+	echo $reg_bin $ip $user $2 $pk >> $HOME/test.log
 	python $reg_bin $ip $user $2 $pk
 
 	if [ $? -eq 0 ]; then
@@ -298,45 +353,25 @@ function reg_key()
 
 function add_node_to_num()
 {
-	inserted=0
-	i=2
-	add_line="node$1_$2_$3"
-	rm -rf $HOME/conn.data.tmp
-
-	while read line; do
-		echo $line >> $HOME/conn.data.tmp
-
-		if [ "$i" -eq "$1" ]; then
-			echo $add_line >> $HOME/conn.data.tmp
-			inserted=1
-		fi
-
-		i=$((i+1))
-	done < "$HOME/conn.data"
-
-	if [ "$inserted" -eq 0 ]; then
-		echo $add_line >> $HOME/conn.data.tmp
-	fi
-
-	mv $HOME/conn.data.tmp $HOME/conn.data
-	return 0
+	add_site="node$1_$2_$3"
+	sites[$1]=$add_site
+	export_to_file
 }
 
 # Read suitable number for insertion.
 function find_insert_num()
 {
 	i=1
-	while read line; do
-		cmd="echo \"$line\" | awk -F \"_\" {'print \$1'}"
-		line_num=$(eval "$cmd")
 
-		if [[ "$line_num" != "node$i" ]]; then
+	for site in "${sites[@]}"
+	do
+		if [ "${sites[$i]}" == "" ]; then
 			echo $i
 			return 0
 		fi
 
 		i=$((i+1))
-	done < "$HOME/conn.data"
+	done
 
 	echo $i
 	return 0
@@ -349,14 +384,12 @@ function add_node()
 		exit 1
 	fi
 
-	display_site
-
 	num=$(find_insert_num)
 
 	echo -e
 
 	while true; do
-		echo -n "Add this node to entry "
+		echo -n "Add this node to position "
 		color_msg 32 "[$num] " -n
 		read -p "(y/n)" yn
 
@@ -394,6 +427,7 @@ function display_usage()
 	color_msg 32 "num" -n
 	color_msg 38 ": SSH to site #num."
 	color_msg 38 "          ex. cn 2"
+	color_msg 38 "          ex. cn 3 -X (with X-forwarding)"
 
 	color_msg 38 "   - " -n
 	color_msg 32 "l" -n
@@ -415,14 +449,13 @@ function display_usage()
 	color_msg 38 ": Delete a site (num). "
 	color_msg 38 "        ex: cn d 3"
 
-	color_msg 38 "   - " -n
-	color_msg 32 "s" -n
-	color_msg 38 ": scp a file/directory to the given site. "
-	color_msg 38 "        ex: cn s file 3"
+	display_scp
 
 	color_msg 38 "   - " -n
 	color_msg 32 "rn" -n
 	color_msg 38 ": reorder the number of all sites."
+
+	display_move_usage
 	echo -e
 	display_author
 	echo -e
@@ -439,36 +472,17 @@ function del_node()
 		exit 0
 	fi
 
-	rm -rf $HOME/conn.data.tmp
+	shift 1
+	i=0
 
-	while read line
+	# Find indexes of the deleting site
+	for num in $@
 	do
-		cmd="echo \"$line\" | awk -F \"_\" {'print \$1'}"
-		num=`eval $cmd`
+		unset sites[$num]
+	done
 
-		exist=0
-		for node in $@
-		do
-			if [ "node$node" == "$num" ]; then
-				exist=1
-			fi
-		done
-
-		if [ $exist -eq 0 ]; then
-			echo $line >> $HOME/conn.data.tmp
-		fi
-	done < "$HOME/conn.data"
-
-	if [ -f $HOME/conn.data.tmp ]; then
-		mv $HOME/conn.data.tmp $HOME/conn.data
-	else
-		rm -rf $HOME/conn.data
-		touch $HOME/conn.data
-	fi
-
-	echo -e
+	export_to_file
 }
-
 
 function check_python()
 {
@@ -479,35 +493,82 @@ function check_python()
 	fi
 }
 
-
-function get_numofsite()
-{
-	numofsite=$(cat $HOME/conn.data | wc -l)
-	echo $numofsite
-}
-
 function renumber_sites()
 {
-	read_line_array
-	numofsite=$(get_numofsite)
-	rm -rf $HOME/conn.data
-
 	i=1
-	for line in "${line_array[@]}"
+
+	for site in "${sites[@]}"
 	do
 		node_idx="node$i"
-		field2=$(echo $line | awk -F "_" {'print $2'})
-		field3=$(echo $line | awk -F "_" {'print $3'})
-		out_line="$node_idx"_"$field2"_"$field3"
-		echo $out_line >> $HOME/conn.data
+		field2=$(echo $site | awk -F "_" {'print $2'})
+		field3=$(echo $site | awk -F "_" {'print $3'})
+		tmp_sites[$i]="$node_idx"_"$field2"_"$field3"
 		i=$(($i+1))
 	done
+
+	unset sites
+	sites=("${tmp_sites[@]}")
+	unset tmp_sites
+
+	export_to_file
 }
 
+function display_move_usage()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "m" -n
+	color_msg 38 ": Move a site #num1 to #num2"
+	color_msg 38 "        ex: cn m 10 3"
+}
 
+# Recursively move $1 to $2
+# Input:
+#   $1->original site number
+#   $2->site number that will move to
+#   $3->the site number which indicates the end of recursive moving
+function move_function()
+{
+	if [ -z $3 ]; then
+		display_move_usage
+		exit 0
+	fi
+
+	id="node$2"
+	field1=$(echo "${sites[$1]}" | awk -F "_" {'print $2'})
+	field2=$(echo "${sites[$1]}" | awk -F "_" {'print $3'})
+
+	# This will occurs when $1 > $2, we let $3 = $1 and this check is to limit
+	# the movement stop at most on the position of $1.
+	if [ $2 -eq $3 ]; then
+		sites[$2]="$id"_"$field1"_"$field2"
+		return 0
+	fi
+
+	# local variable for recursive call
+	local site="$id"_"$field1"_"$field2"
+
+	# Check if the dest site number is existed.
+	if [ "${sites[$2]}" != "" ]; then
+		move_function $2 $(($2+1)) $3
+	fi
+
+	# We have make sure the dest is empty or is moved to its next. So, we can
+	# assign value to it (move over).
+	sites[$2]="$site"
+
+	# When $2 > $1, after we move $1 to its next, we have to unset its original
+	# position
+	if [ $2 -gt $1 ]; then
+		unset sites[$1]
+	fi
+}
+
+# function main()
 if [ -z "$1" ]; then
 	display_usage
 else
+	read_sites
+
 	case "$1" in
 		[l] )
 			echo -e
@@ -515,12 +576,10 @@ else
 			exit 0;;
 		[a] )
 			add_node "$2" "$3"
-			sort_site
 			display_site
 			exit 0;;
 		[d] )
 			del_node $@
-			sort_site
 			display_site
 			exit 0;;
 		[s] )
@@ -530,12 +589,18 @@ else
 			check_python
 			reg_key $2 $3
 			exit 0;;
+		[m] )
+			move_function $2 $3 $2
+			export_to_file
+			display_site
+			exit 0;;
 		rn )
 			renumber_sites
+			display_site
 			exit 0;;
 	esac
 
-	node=$(find_node "$1")
-	echo $node
+	node=$(find_userip "$1")
+	check_n_exit $? "[$1] does not exist"
 	ssh $2 $node
 fi

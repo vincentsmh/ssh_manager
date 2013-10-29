@@ -28,3 +28,5 @@ ex: cn d 3
 - s: scp a file/directory to the given site. <br>
 ex: cn s file 3
 - rn: reorder the number of all sites.
+- m: Move a site #num1 to #num2 <br>
+ex: cn m 10 3
