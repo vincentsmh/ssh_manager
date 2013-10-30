@@ -286,14 +286,14 @@ function scp_function()
 		exit 0
 	fi
 
-	file=$2
+	file="$2"
 	shift 2
 
 	for node in $@
 	do
 		userip=$(find_userip $node)
 		check_n_exit $? "[$node] does not exist"
-		scp -r $file $userip:~
+		scp -r "$file" $userip:~
 	done
 
 	if [ $? -eq 0 ]; then
@@ -594,7 +594,7 @@ else
 			display_site
 			exit 0;;
 		[s] )
-			scp_function $@
+			scp_function "$@"
 			exit 0;;
 		[r] )
 			check_python
