@@ -307,7 +307,17 @@ function scp_function()
 function find_regkeybin()
 {
 	bin=$(whereis regkey.py | awk {'print $2'})
+
+	if [ "$bin" == "" ]; then
+		bin=$(whereis regkey.py)
+	fi
+
+	if [ "$bin" == "" ]; then
+		return 1
+	fi
+
 	echo $bin
+	return 0
 }
 
 
@@ -335,7 +345,12 @@ function reg_key()
 	check_n_exit $? "[$1] does not exist."
 
 	reg_bin=$(find_regkeybin)
-	echo $reg_bin $ip $user $2 $pk >> $HOME/test.log
+
+	if [ ! $? -eq 0 ]; then
+		color_msg 31 "Cannot find regkey.py."
+		exit 1
+	fi
+
 	python $reg_bin $ip $user $2 $pk
 
 	if [ $? -eq 0 ]; then
