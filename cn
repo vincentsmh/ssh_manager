@@ -1,5 +1,7 @@
 #/bin/bash
 
+DATA="$HOME/conn.data"
+
 # Color function
 # Parameters:
 #    - $1: color number
@@ -8,6 +10,18 @@
 function color_msg
 {
 	echo -e $3 "\033[1;$1m$2\033[0m"
+}
+
+function color_msg_len
+{
+	echo -ne "\033[1;$1m"
+	printf %-$3s "$2"
+	echo -e $4 "\033[0m"
+}
+
+function log()
+{
+	echo "$1" >> $HOME/conn.log
 }
 
 function check_n_exit()
@@ -19,87 +33,92 @@ function check_n_exit()
 	fi
 }
 
+function strlen()
+{
+	if [ -z $2 ]; then
+		local len=$(($(echo "$1" | wc -c | bc) - 1 ))
+	else
+		local len=$(($(echo $1 | wc -c | bc) - 1 ))
+	fi
+
+	echo $len
+}
+
 # Read all sites data into 'sites'
 function read_sites()
 {
+	local len=0
+	local read_max=0
 	num_of_sites=0
+	max_num_len=2
+	max_userip_len=7
+	max_desc_len=11
+	unset site_num
+	unset site_userip
+	unset site_desc
 
 	while read site
 	do
-		th=$(echo $site | awk -F "_" {'print $1'} | awk -F "node" {'print $2'})
-		sites[$th]=$site
-		num_of_sites=$(($num_of_sites+1))
-	done < $HOME/conn.data
+		if [ $read_max -ne 0 ]; then
+			local th=$(echo "$site" | awk -F "_" {'print $1'} | bc)
+			site_num[$th]=$th
+			site_userip[$th]=$(echo "$site" | awk -F "_" {'print $2'})
+			site_desc[$th]=$(echo "$site" | awk -F "_" {'print $3'})
+
+			if [ "${site_num[$th]}" != "" ]; then
+				num_of_sites=$(($num_of_sites+1))
+			fi
+		else
+			max_num_len=$(echo "$site" | awk -F "_" {'print $1'} | bc)
+			max_userip_len=$(echo "$site" | awk -F "_" {'print $2'} | bc)
+			max_desc_len=$(echo "$site" | awk -F "_" {'print $3'} | bc)
+			read_max=1
+		fi
+	done < $DATA
 }
 
 function export_to_file()
 {
-	rm -rf $HOME/conn.data
+	echo "$max_num_len"_"$max_userip_len"_"$max_desc_len" > $DATA
 
-	for site in "${sites[@]}"
-	do
-		echo $site
-	done > $HOME/conn.data
+	for i in ${!site_num[*]}; do
+		echo "${site_num[$i]}"_"${site_userip[$i]}"_"${site_desc[$i]}"
+	done >> $DATA
 }
 
-# Check if the given node exists in conn.data. If not, exit with error code 1.
-# Input:
-#   $1: site number
-#   $2: exit if the site number is not existed.
-# Return:
-#   -1: does not exist
-#   >0: index
+# Check if the given node exists in conn.data.
+# 0: does not exist, 1: exist
 function is_site_exist()
 {
 	# Check if the node is existed.
-	i=1
-	check=0
-
-	for site in "${sites[@]}"
-	do
-		check=$(echo $site | grep -c node$1)
-
-		if [ "$check" != "0" ]; then
-			break
-		fi
-
-		i=$(($i+1))
-	done
-
-	if [ "$check" == "0" ]; then
-		return -1
+	if [ "${site_num[$1]}" == "" ]; then
+		return 0
 	else
-		return $i
+		return 1
 	fi
 }
 
 # Parse conn.data to retrieve node's IP according to the given node number
 function find_ip()
 {
-	is_site_exist $1
-	index=$?
-
-	if [ $index -eq -1 ]; then
+	if [ "${site_num[$1]}" == "" ]; then
 		return 1
 	fi
 
-	cmd="echo ${sites[$index]} | awk -F \"_\" {'print \$2'} | awk -F \"@\" {'print \$2'}"
-	ip=$(eval $cmd)
+	local cmd="echo ${site_userip[$1]} | awk -F \"@\" {'print \$2'}"
+	local ip=$(eval $cmd)
 	echo $ip
 }
 
 # Parse conn.data to retrieve user according to the given node number
 function find_user()
 {
-	is_site_exist $1
-	index=$?
-
-	if [ $index -eq -1 ]; then
+	if [ "${site_num[$1]}" == "" ]; then
 		return 1
 	fi
 
-	cmd="echo ${sites[$index]} | awk -F \"_\" {'print \$2'} | awk -F \"@\" {'print \$1'}"
-	user=$(eval $cmd)
+	local cmd="echo ${site_userip[$1]} | awk -F \"@\" {'print \$1'}"
+	local user=$(eval $cmd)
 	echo $user
 }
 
@@ -112,49 +131,6 @@ function find_userip()
 
 	userip=`echo "${sites[$1]}" | grep node$1_ | awk -F "_" {'print $2'}`
 	echo $userip
-	return 0
-}
-
-function get_maxlen()
-{
-	DEFAULT_ID_LEN=3
-	DEFAULT_USERIP_LEN=7
-	DEFAULT_DESCRIPT_LEN=11
-	max_userip_len=0
-	max_id_len=0
-	max_desc_len=0
-
-	for site in "${sites[@]}"
-	do
-		len_userip=`echo $site | awk -F "_" {'print $2'} | wc -c`
-		len_id=`echo $site | awk -F "_" {'print $1'} | awk -F "node" {'print $2'} | wc -c`
-		len_desc=`echo $site | awk -F "_" {'print $3'} | wc -c`
-
-		if [ $len_userip -gt $max_userip_len ]; then
-			max_userip_len=$len_userip
-		fi
-
-		if [ $len_id -gt $max_id_len ]; then
-			max_id_len=$len_id
-		fi
-
-		if [ $len_desc -gt $max_desc_len ]; then
-			max_desc_len=$len_desc
-		fi
-	done
-
-	if [ $DEFAULT_ID_LEN -gt $max_id_len ]; then
-		max_id_len = $DEFAULT_ID_LEN
-	fi
-
-	if [ $DEFAULT_USERIP_LEN -gt $max_userip_len ]; then
-		max_userip_len = $DEFAULT_USERIP_LEN
-	fi
-
-	if [ $DEFAULT_DESCRIPT_LEN -gt $max_desc_len ]; then
-		max_desc_len = $DEFAULT_DESC_LEN
-	fi
-
 	return 0
 }
 
@@ -180,19 +156,19 @@ function get_space()
 function print_dash()
 {
 	echo -n "+"
-	for ((i=0;i<=$1;i++))
+	for ((i=0;i<=$(($max_num_len+1));i++))
 	do
 		echo -n "-"
 	done
 	echo -n "+"
 
-	for ((i=0;i<=$2;i++))
+	for ((i=0;i<=$(($max_userip_len+1));i++))
 	do
 		echo -n "-"
 	done
 	echo -n "+"
 
-	for ((i=0;i<=$3;i++))
+	for ((i=0;i<=$(($max_desc_len+1));i++))
 	do
 		echo -n "-"
 	done
@@ -207,24 +183,16 @@ function print_dash()
 #   $3->max_desc_len
 function print_head_tail()
 {
-	TITLE_NUM="NO"
-	TITLE_USERIP="user@IP"
-	TITLE_DESCRIPT="Description"
-
 	print_dash $2 $3 $4
 
 	if [ "$1" == "head" ];then
-		space_id=$(get_space "$TITLE_NUM" $max_id_len)
-		space_userip=$(get_space "$TITLE_USERIP" $max_userip_len)
-		space_desc=$(get_space "$TITLE_DESCRIPT" $max_desc_len)
-
 		color_msg 37 "| " -n
-		color_msg 37 "$TITLE_NUM$space_id" -n
-		color_msg 37 "| " -n
-		color_msg 37 "$TITLE_USERIP$space_userip" -n
-		color_msg 37 "| " -n
-		color_msg 37 "$TITLE_DESCRIPT$space_desc" -n
-		color_msg 37 "|"
+		color_msg_len 37 "NO" $max_num_len -n
+		color_msg 37 " | " -n
+		color_msg_len 37 "user@IP" $max_userip_len -n
+		color_msg 37 " | " -n
+		color_msg_len 37 "Description" $max_desc_len -n
+		color_msg 37 " |"
 
 		print_dash $2 $3 $4
 	fi
@@ -232,41 +200,30 @@ function print_head_tail()
 }
 
 # Display all of the remote sites defined in conn.data
-function display_site()
+function display_sites()
 {
-
-	# If no data file, touch an empty one.
-	touch $HOME/conn.data
 	color=32
 
-	get_maxlen
-
 	# Print table head
-	print_head_tail "head" $max_id_len $max_userip_len $max_desc_len
+	print_head_tail "head"
 
-	for site in "${sites[@]}"
+	# Display from '1'
+	for i in ${!site_num[*]}
 	do
-		nodeNUM=`echo $site | awk -F "_"  {'print $1'} | awk -F "node" {'print $2'}`
-		nodeName=`echo $site | awk -F "_" {'print $3'}`
-		nodeUserIP=`echo $site | awk -F "_" {'print $2'}`
-		space_id=$(get_space "$nodeNUM" $max_id_len)
-		space_userip=$(get_space "$nodeUserIP" $max_userip_len)
-		space_desc=$(get_space "$nodeName" $max_desc_len)
-
 		color_msg 37 "| " -n
-		color_msg $color "$nodeNUM$space_id" -n
-		color_msg 37 "| " -n
-		color_msg $color "$nodeUserIP$space_userip" -n
-		color_msg 37 "| " -n
-		color_msg $color "$nodeName$space_desc" -n
-		color_msg 37 "|"
+		color_msg_len $color "$i" $max_num_len -n
+		color_msg 37 " | " -n
+		color_msg_len $color "${site_userip[$i]}" $max_userip_len -n
+		color_msg 37 " | " -n
+		color_msg_len $color "${site_desc[$i]}" $max_desc_len -n
+		color_msg 37 " |"
 		color=$((color+1))
 		if [ $color -eq 38 ]; then
 			color=32
 		fi
 	done
 
-	print_head_tail "tail" $max_id_len $max_userip_len $max_desc_len
+	print_head_tail "tail"
 	echo -e
 }
 
@@ -279,6 +236,7 @@ function display_scp()
 }
 
 # Secure copy file to the remote site.
+# Input: $1->s, $2->the file which will be copied
 function scp_function()
 {
 	if [ -z $1 ] || [ -z $2 ]; then
@@ -289,11 +247,11 @@ function scp_function()
 	file="$2"
 	shift 2
 
-	for node in $@
+	for i in $@
 	do
-		userip=$(find_userip $node)
-		check_n_exit $? "[$node] does not exist"
-		scp -r "$file" $userip:~
+		if [ "${site_num[$i]}" != "" ]; then
+			scp -r "$2" ${site_userip[$i]}:
+		fi
 	done
 
 	if [ $? -eq 0 ]; then
@@ -333,18 +291,18 @@ function reg_key()
 	fi
 
 	# Check if have id_rsa.pub
-	pk="$HOME/.ssh/id_rsa.pub"
+	local pk="$HOME/.ssh/id_rsa.pub"
 	if [ ! -f $pk ]; then
 		color_msg 31 "No public key found. Please generate your key-pair first."
 		exit 0
 	fi
 
-	ip=$(find_ip "$1")
+	local ip=$(find_ip $1)
 	check_n_exit $? "[$1] does not exist."
-	user=$(find_user "$1")
+	local user=$(find_user "$1")
 	check_n_exit $? "[$1] does not exist."
 
-	reg_bin=$(find_regkeybin)
+	local reg_bin=$(find_regkeybin)
 
 	if [ ! $? -eq 0 ]; then
 		color_msg 31 "Cannot find regkey.py."
@@ -362,30 +320,78 @@ function reg_key()
 	fi
 }
 
+# Add number of space to the given string
+# Input: $1->string, $2->number of space
+function add_space_to()
+{
+	if [ -z $3 ]; then
+		echo -n "$1"
+	else
+		echo -n $1
+	fi
+
+	if [ $2 -gt 0 ]; then
+		printf %$2s
+	fi
+}
+
+function add_space_to_all()
+{
+	# Adjust all of the other entries' space
+	if [ "$1" == "num" ]; then
+		for i in ${!site_num[*]}; do
+			site_num[$i]=$(add_space_to "${site_num[$i]}" $2)
+		done
+	fi
+
+	if [ "$1" == "userip" ]; then
+		for i in ${!site_userip[*]}; do
+			site_userip[$i]=$(add_space_to "${site_userip[$i]}" $2)
+		done
+	fi
+
+	if [ "$1" == "desc" ]; then
+		for i in ${!site_desc[*]}; do
+			site_desc[$i]=$(add_space_to "${site_desc[$i]}" $2)
+		done
+	fi
+}
+
 function add_node_to_num()
 {
-	add_site="node$1_$2_$3"
-	sites[$1]=$add_site
+	local field1_len=$(strlen "$1")
+	local field2_len=$(strlen "$2")
+	local field3_len=$(strlen "$3")
+
+	if [ $field1_len -gt $max_num_len ]; then
+		max_num_len=$field1_len
+	fi
+
+	if [ $field2_len -gt $max_userip_len ]; then
+		max_userip_len=$field2_len
+	fi
+
+	if [ $field3_len -gt $max_desc_len ]; then
+		max_desc_len=$field3_len
+	fi
+
+	site_num[$1]="$1"
+	site_userip[$1]="$2"
+	site_desc[$1]="$3"
 	export_to_file
 }
 
 # Read suitable number for insertion.
 function find_insert_num()
 {
-	i=1
-
-	for site in "${sites[@]}"
+	for ((i=1;i<=$num_of_sites;i++ ))
 	do
-		if [ "${sites[$i]}" == "" ]; then
-			echo $i
-			return 0
+		if [ "${site_num[$i]}" == "" ]; then
+			break
 		fi
-
-		i=$((i+1))
 	done
 
 	echo $i
-	return 0
 }
 
 function add_node()
@@ -472,11 +478,86 @@ function display_usage()
 	echo -e
 }
 
+function find_max_len()
+{
+	local max_len=0
+	local len=0
+
+	if [ "$1" == "num" ]; then
+		for i in ${!site_num[*]}; do
+			len=$(strlen "${site_num[$i]}" "nospace")
+
+			if [ $len -gt $max_len ]; then
+				max_len=$len
+			fi
+		done
+	elif [ "$1" == "userip" ]; then
+		for i in ${!site_userip[*]}; do
+			len=$(strlen "${site_userip[$i]}" "nospace")
+
+			if [ $len -gt $max_len ]; then
+				max_len=$len
+			fi
+		done
+	elif [ "$1" == "desc" ]; then
+		for i in ${!site_desc[*]}; do
+			len=$(strlen "${site_desc[$i]}" "nospace" )
+
+			if [ $len -gt $max_len ]; then
+				max_len=$len
+			fi
+		done
+	fi
+
+	echo $max_len
+}
+
+function refind_max()
+{
+	local len=0
+
+	if [ $1 -eq 1 ];then
+		max_num_len=0
+
+		for i in ${!site_num[*]}; do
+			len=$(strlen "${site_num[$i]}")
+
+			if [ $len -gt $max_num_len ]; then
+				max_num_len=$len
+			fi
+		done
+	fi
+
+	if [ $2 -eq 1 ];then
+		max_userip_len=0
+
+		for i in ${!site_userip[*]}; do
+			len=$(strlen "${site_userip[$i]}")
+
+			if [ $len -gt $max_userip_len ]; then
+				max_userip_len=$len
+			fi
+		done
+	fi
+
+	if [ $3 -eq 1 ];then
+		max_desc_len=0
+
+		for i in ${!site_desc[*]}; do
+			len=$(strlen "${site_desc[$i]}")
+
+			if [ $len -gt $max_desc_len ]; then
+				max_desc_len=$len
+			fi
+		done
+	fi
+}
+
 # Delete the given node
 function del_node()
 {
 	if [ -z "$2" ]; then
-		display_site
+		display_sites
 
 		echo -e
 		color_msg 38 "Usage: conn d [num1 num2 num3 ...]"
@@ -484,14 +565,31 @@ function del_node()
 	fi
 
 	shift 1
-	i=0
+	local num_check=0
+	local userip_check=0
+	local desc_check=0
 
 	# Find indexes of the deleting site
 	for num in $@
 	do
-		unset sites[$num]
+		if [ $(strlen "${site_num[$num]}") -eq $max_num_len ]; then
+			num_check=1
+		fi
+
+		if [ $(strlen "${site_userip[$num]}") -eq $max_userip_len ]; then
+			userip_check=1
+		fi
+
+		if [ $(strlen "${site_desc[$num]}") -eq $max_desc_len ]; then
+			desc_check=1
+		fi
+
+		unset site_num[$num]
+		unset site_userip[$num]
+		unset site_desc[$num]
 	done
 
+	refind_max $num_check $userip_check $desc_check
 	export_to_file
 }
 
@@ -506,20 +604,30 @@ function check_python()
 
 function renumber_sites()
 {
-	i=1
+	j=1
 
-	for site in "${sites[@]}"
-	do
-		node_idx="node$i"
-		field2=$(echo $site | awk -F "_" {'print $2'})
-		field3=$(echo $site | awk -F "_" {'print $3'})
-		tmp_sites[$i]="$node_idx"_"$field2"_"$field3"
-		i=$(($i+1))
+	for i in ${!site_num[*]}; do
+		tmp_site_num[$j]="$j"
+		tmp_site_userip[$j]="${site_userip[$i]}"
+		tmp_site_desc[$j]="${site_desc[$i]}"
+		j=$(($j+1))
 	done
 
-	unset sites
-	sites=("${tmp_sites[@]}")
-	unset tmp_sites
+	unset site_num
+	unset site_userip
+	unset site_desc
+
+	j=1
+	for i in ${!tmp_site_num[*]}; do
+		site_num[$j]="${tmp_site_num[$i]}"
+		site_userip[$j]="${tmp_site_userip[$i]}"
+		site_desc[$j]="${tmp_site_desc[$i]}"
+		j=$(($j+1))
+	done
+
+	unset tmp_site_num
+	unset tmp_site_userip
+	unset tmp_site_desc
 
 	export_to_file
 }
@@ -544,33 +652,37 @@ function move_function()
 		exit 0
 	fi
 
-	id="node$2"
-	field1=$(echo "${sites[$1]}" | awk -F "_" {'print $2'})
-	field2=$(echo "${sites[$1]}" | awk -F "_" {'print $3'})
-
 	# This will occurs when $1 > $2, we let $3 = $1 and this check is to limit
-	# the movement stop at most on the position of $1.
+	# the recursive routine stops at most on the position of $1.
 	if [ $2 -eq $3 ]; then
-		sites[$2]="$id"_"$field1"_"$field2"
+		site_num[$2]=$2
+		site_userip[$2]="${site_userip[$1]}"
+		site_desc[$2]="${site_desc[$1]}"
 		return 0
 	fi
 
 	# local variable for recursive call
-	local site="$id"_"$field1"_"$field2"
+	local num="${site_num[$2]}"
+	local userip="${site_userip[$1]}"
+	local desc="${site_desc[$1]}"
 
 	# Check if the dest site number is existed.
-	if [ "${sites[$2]}" != "" ]; then
+	if [ "${site_num[$2]}" != "" ]; then
 		move_function $2 $(($2+1)) $3
 	fi
 
 	# We have make sure the dest is empty or is moved to its next. So, we can
 	# assign value to it (move over).
-	sites[$2]="$site"
+	site_num[$2]="$num"
+	site_userip[$2]="$userip"
+	site_desc[$2]="$desc"
 
 	# When $2 > $1, after we move $1 to its next, we have to unset its original
 	# position
 	if [ $2 -gt $1 ]; then
-		unset sites[$1]
+		unset site_num[$1]
+		unset site_userip[$1]
+		unset site_desc[$1]
 	fi
 }
 
@@ -583,15 +695,15 @@ else
 	case "$1" in
 		[l] )
 			echo -e
-			display_site
+			display_sites
 			exit 0;;
 		[a] )
 			add_node "$2" "$3"
-			display_site
+			display_sites
 			exit 0;;
 		[d] )
 			del_node $@
-			display_site
+			display_sites
 			exit 0;;
 		[s] )
 			scp_function "$@"
@@ -603,15 +715,19 @@ else
 		[m] )
 			move_function $2 $3 $2
 			export_to_file
-			display_site
+			display_sites
 			exit 0;;
 		rn )
 			renumber_sites
-			display_site
+			display_sites
 			exit 0;;
 	esac
 
-	userip=$(find_userip "$1")
-	check_n_exit $? "[$1] does not exist"
-	ssh $2 $userip
+	is_site_exist $1
+
+	if [ $? -eq 0 ]; then
+		color_msg 32 "[$1] does not exist"
+	else
+		ssh $2 ${site_userip[$1]}
+	fi
 fi
