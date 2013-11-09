@@ -53,9 +53,11 @@ function read_sites()
 	max_num_len=2
 	max_userip_len=7
 	max_desc_len=11
+	max_status_len=6
 	unset site_num
 	unset site_userip
 	unset site_desc
+	unset site_status
 
 	while read site
 	do
@@ -64,6 +66,7 @@ function read_sites()
 			site_num[$th]=$th
 			site_userip[$th]=$(echo "$site" | awk -F "_" {'print $2'})
 			site_desc[$th]=$(echo "$site" | awk -F "_" {'print $3'})
+			site_status[$th]=$(echo "$site" | awk -F "_" {'print $4'})
 
 			if [ "${site_num[$th]}" != "" ]; then
 				num_of_sites=$(($num_of_sites+1))
@@ -72,6 +75,7 @@ function read_sites()
 			max_num_len=$(echo "$site" | awk -F "_" {'print $1'} | bc)
 			max_userip_len=$(echo "$site" | awk -F "_" {'print $2'} | bc)
 			max_desc_len=$(echo "$site" | awk -F "_" {'print $3'} | bc)
+			max_status_len=$(echo "$site" | awk -F "_" {'print $4'} | bc)
 			read_max=1
 		fi
 	done < $DATA
@@ -79,10 +83,10 @@ function read_sites()
 
 function export_to_file()
 {
-	echo "$max_num_len"_"$max_userip_len"_"$max_desc_len" > $DATA
+	echo "$max_num_len"_"$max_userip_len"_"$max_desc_len"_"$max_status_len" > $DATA
 
 	for i in ${!site_num[*]}; do
-		echo "${site_num[$i]}"_"${site_userip[$i]}"_"${site_desc[$i]}"
+		echo "${site_num[$i]}"_"${site_userip[$i]}"_"${site_desc[$i]}"_"${site_status[$i]}"
 	done >> $DATA
 }
 
@@ -122,37 +126,6 @@ function find_user()
 	echo $user
 }
 
-# Parse conn.data to retrieve the node which is user@ip.
-function find_userip()
-{
-	if [ "${sites[$1]}" == "" ]; then
-		return 1
-	fi
-
-	userip=`echo "${sites[$1]}" | grep node$1_ | awk -F "_" {'print $2'}`
-	echo $userip
-	return 0
-}
-
-function get_space()
-{
-	len=$(echo $1 | wc -c)
-	space_len=$(($2 - $len))
-
-	if [ $space_len -eq 0 ]; then
-		echo " "
-		return 0
-	fi
-
-	space=" "
-	for ((i=0;i<$space_len;i++))
-	do
-		space=$(echo "$space ")
-	done
-
-	echo "$space"
-}
-
 function print_dash()
 {
 	echo -n "+"
@@ -172,6 +145,13 @@ function print_dash()
 	do
 		echo -n "-"
 	done
+	echo -n "+"
+
+	for ((i=0;i<=$(($max_status_len+1));i++))
+	do
+		echo -n "-"
+	done
+
 	echo "+"
 }
 
@@ -183,7 +163,7 @@ function print_dash()
 #   $3->max_desc_len
 function print_head_tail()
 {
-	print_dash $2 $3 $4
+	print_dash
 
 	if [ "$1" == "head" ];then
 		color_msg 37 "| " -n
@@ -192,6 +172,8 @@ function print_head_tail()
 		color_msg_len 37 "user@IP" $max_userip_len -n
 		color_msg 37 " | " -n
 		color_msg_len 37 "Description" $max_desc_len -n
+		color_msg 37 " | " -n
+		color_msg_len 37 "Status" $max_status_len -n
 		color_msg 37 " |"
 
 		print_dash $2 $3 $4
@@ -208,14 +190,15 @@ function display_sites()
 	print_head_tail "head"
 
 	# Display from '1'
-	for i in ${!site_num[*]}
-	do
+	for i in ${!site_num[*]}; do
 		color_msg 37 "| " -n
 		color_msg_len $color "$i" $max_num_len -n
 		color_msg 37 " | " -n
 		color_msg_len $color "${site_userip[$i]}" $max_userip_len -n
 		color_msg 37 " | " -n
 		color_msg_len $color "${site_desc[$i]}" $max_desc_len -n
+		color_msg 37 " | " -n
+		color_msg_len $color "${site_status[$i]}" $max_status_len -n
 		color_msg 37 " |"
 		color=$((color+1))
 		if [ $color -eq 38 ]; then
@@ -278,6 +261,15 @@ function find_regkeybin()
 	return 0
 }
 
+function find_pk()
+{
+	# Check if have id_rsa.pub
+	local pk="$HOME/.ssh/id_rsa.pub"
+
+	if [ -f $pk ]; then
+		echo $pk
+	fi
+}
 
 # This function will regiester local's public key (id_rsa.pub) to the remote site.
 function reg_key()
@@ -290,11 +282,10 @@ function reg_key()
 		exit 0
 	fi
 
-	# Check if have id_rsa.pub
-	local pk="$HOME/.ssh/id_rsa.pub"
-	if [ ! -f $pk ]; then
+	local pk=$(find_pk)
+	if [ "$pk" == "" ]; then
 		color_msg 31 "No public key found. Please generate your key-pair first."
-		exit 0
+		return 1
 	fi
 
 	local ip=$(find_ip $1)
@@ -320,43 +311,6 @@ function reg_key()
 	fi
 }
 
-# Add number of space to the given string
-# Input: $1->string, $2->number of space
-function add_space_to()
-{
-	if [ -z $3 ]; then
-		echo -n "$1"
-	else
-		echo -n $1
-	fi
-
-	if [ $2 -gt 0 ]; then
-		printf %$2s
-	fi
-}
-
-function add_space_to_all()
-{
-	# Adjust all of the other entries' space
-	if [ "$1" == "num" ]; then
-		for i in ${!site_num[*]}; do
-			site_num[$i]=$(add_space_to "${site_num[$i]}" $2)
-		done
-	fi
-
-	if [ "$1" == "userip" ]; then
-		for i in ${!site_userip[*]}; do
-			site_userip[$i]=$(add_space_to "${site_userip[$i]}" $2)
-		done
-	fi
-
-	if [ "$1" == "desc" ]; then
-		for i in ${!site_desc[*]}; do
-			site_desc[$i]=$(add_space_to "${site_desc[$i]}" $2)
-		done
-	fi
-}
-
 function add_node_to_num()
 {
 	local field1_len=$(strlen "$1")
@@ -378,6 +332,8 @@ function add_node_to_num()
 	site_num[$1]="$1"
 	site_userip[$1]="$2"
 	site_desc[$1]="$3"
+	ping_site $1
+
 	export_to_file
 }
 
@@ -467,6 +423,15 @@ function display_usage()
 	color_msg 38 "        ex: cn d 3"
 
 	display_scp
+
+	color_msg 38 "   - " -n
+	color_msg 32 "p" -n
+	color_msg 38 ": Ping a site to test the connectivity. "
+	color_msg 38 "        ex: cn p 3"
+
+	color_msg 38 "   - " -n
+	color_msg 32 "pa" -n
+	color_msg 38 ": Ping all sites to test their connectivity."
 
 	color_msg 38 "   - " -n
 	color_msg 32 "rn" -n
@@ -686,6 +651,70 @@ function move_function()
 	fi
 }
 
+function uninstall()
+{
+	local os=`uname`
+
+	if [ "$os" == "Linux" ]; then
+		local DEPLOY_FOLDER="/usr/local/bin"
+	else
+		local DEPLOY_FOLDER="/usr/bin"
+	fi
+
+	local check=0
+	local FILES="cn regkey.py regkey.pyc pexpect.py pexpect.pyc"
+
+	for file in $FILES; do
+		rm -rf $DEPLOY_FOLDER/$file
+
+		if [ $? -ne 0 ]; then
+			color_msg 32 "Please make sure you have root permission. (sudo cn uninstall)"
+			check=1
+		fi
+	done
+
+	rm -rf $DATA
+
+	# Check if all files are removed
+}
+
+# Ping the given site to test if the it is reachable.
+# Input: $1->the number of site
+function ping_site()
+{
+	local ip=$(find_ip $1)
+
+	ping -c 1 -W 1500 $ip
+
+	if [ $? -eq 0 ]; then
+		site_status[$1]="On"
+	else
+		site_status[$1]="Off"
+	fi
+
+	export_to_file
+	return 0
+}
+
+# Ping all site to check their connectivity
+function ping_all_sites()
+{
+	local ip=""
+
+	for i in ${!site_num[*]}; do
+		ip=$(find_ip $i)
+		ping -c 1 -W 1500 $ip
+
+		if [ $? -eq 0 ]; then
+			site_status[$i]="On"
+		else
+			site_status[$i]="Off"
+		fi
+	done
+
+	export_to_file
+}
+
 # function main()
 if [ -z "$1" ]; then
 	display_usage
@@ -717,9 +746,20 @@ else
 			export_to_file
 			display_sites
 			exit 0;;
+		[p] )
+			ping_site $2
+			display_sites
+			exit 0;;
+		pa )
+			ping_all_sites
+			display_sites
+			exit 0;;
 		rn )
 			renumber_sites
 			display_sites
+			exit 0;;
+		uninstall )
+			uninstall
 			exit 0;;
 	esac
 
