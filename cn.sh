@@ -54,10 +54,12 @@ function read_sites()
 	max_userip_len=7
 	max_desc_len=11
 	max_status_len=6
+	max_feq_len=9
 	unset site_num
 	unset site_userip
 	unset site_desc
 	unset site_status
+	unset site_feq
 
 	while read site
 	do
@@ -67,6 +69,7 @@ function read_sites()
 			site_userip[$th]=$(echo "$site" | awk -F "_" {'print $2'})
 			site_desc[$th]=$(echo "$site" | awk -F "_" {'print $3'})
 			site_status[$th]=$(echo "$site" | awk -F "_" {'print $4'})
+			site_feq[$th]=$(echo "$site" | awk -F "_" {'print $5'} | bc)
 
 			if [ "${site_num[$th]}" != "" ]; then
 				num_of_sites=$(($num_of_sites+1))
@@ -76,6 +79,7 @@ function read_sites()
 			max_userip_len=$(echo "$site" | awk -F "_" {'print $2'} | bc)
 			max_desc_len=$(echo "$site" | awk -F "_" {'print $3'} | bc)
 			max_status_len=$(echo "$site" | awk -F "_" {'print $4'} | bc)
+			max_feq_len=$(echo "$site" | awk -F "_" {'print $5'} | bc)
 			read_max=1
 		fi
 	done < $DATA
@@ -83,10 +87,10 @@ function read_sites()
 
 function export_to_file()
 {
-	echo "$max_num_len"_"$max_userip_len"_"$max_desc_len"_"$max_status_len" > $DATA
+	echo "$max_num_len"_"$max_userip_len"_"$max_desc_len"_"$max_status_len"_"$max_feq_len" > $DATA
 
 	for i in ${!site_num[*]}; do
-		echo "${site_num[$i]}"_"${site_userip[$i]}"_"${site_desc[$i]}"_"${site_status[$i]}"
+		echo "${site_num[$i]}"_"${site_userip[$i]}"_"${site_desc[$i]}"_"${site_status[$i]}"_"${site_feq[$i]}"
 	done >> $DATA
 }
 
@@ -152,6 +156,13 @@ function print_dash()
 		echo -n "-"
 	done
 
+	echo -n "+"
+
+	for ((i=0;i<=$(($max_feq_len+1));i++))
+	do
+		echo -n "-"
+	done
+
 	echo "+"
 }
 
@@ -174,6 +185,8 @@ function print_head_tail()
 		color_msg_len 37 "Description" $max_desc_len -n
 		color_msg 37 " | " -n
 		color_msg_len 37 "Status" $max_status_len -n
+		color_msg 37 " | " -n
+		color_msg_len 37 "Frequency" $max_feq_len -n
 		color_msg 37 " |"
 
 		print_dash $2 $3 $4
@@ -199,6 +212,8 @@ function display_sites()
 		color_msg_len $color "${site_desc[$i]}" $max_desc_len -n
 		color_msg 37 " | " -n
 		color_msg_len $color "${site_status[$i]}" $max_status_len -n
+		color_msg 37 " | " -n
+		color_msg_len $color "${site_feq[$i]}" $max_feq_len -n
 		color_msg 37 " |"
 		color=$((color+1))
 		if [ $color -eq 38 ]; then
@@ -333,6 +348,7 @@ function add_node_to_num()
 	site_userip[$1]="$2"
 	site_desc[$1]="$3"
 	ping_site $1
+	site_feq[$1]=0
 
 	export_to_file
 }
@@ -715,6 +731,16 @@ function ping_all_sites()
 	export_to_file
 }
 
+# Increase one to the frequency of the given site
+# Input: $1-> the number of a site
+function increase_feq()
+{
+	if [ "${site_num[$1]}" != "" ]; then
+		site_feq[$1]=$((${site_feq[$1]}+1))
+		export_to_file
+	fi
+}
+
 # function main()
 if [ -z "$1" ]; then
 	display_usage
@@ -768,6 +794,7 @@ else
 	if [ $? -eq 0 ]; then
 		color_msg 32 "[$1] does not exist"
 	else
+		increase_feq $1
 		ssh $2 ${site_userip[$1]}
 	fi
 fi

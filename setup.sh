@@ -8,12 +8,11 @@ else
 	DEPLOY_FOLDER="/usr/bin"
 fi
 
-FILES="cn regkey.py pexpect.py"
+FILES="regkey.py pexpect.py"
 
 mkdir -p $DEPLOY_FOLDER
 su $SUDO_USER -c "touch $HOME/conn.data"
 
-for file in $FILES;do
-	cp $file $DEPLOY_FOLDER
-	chmod +x $DEPLOY_FOLDER/$file
-done
+cp cn.sh $DEPLOY_FOLDER/cn
+cp regkey.py $DEPLOY_FOLDER/regkey.py
+cp pexpect.py $DEPLOY_FOLDER/pexpect.py
