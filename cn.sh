@@ -405,6 +405,16 @@ function display_author()
 	color_msg 38 "http://vincent-smh.appspot.com"
 }
 
+# Display the usage of 'md' command
+function display_md_usage()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "md" -n
+	color_msg 38 ": Modify a site's description."
+	color_msg 38 "         ex: cn md 3 \"New description to site 3\""
+
+}
+
 # Display the usage of 'cn' command
 function display_usage()
 {
@@ -448,6 +458,8 @@ function display_usage()
 	color_msg 38 "   - " -n
 	color_msg 32 "pa" -n
 	color_msg 38 ": Ping all sites to test their connectivity."
+
+	display_md_usage
 
 	color_msg 38 "   - " -n
 	color_msg 32 "rn" -n
@@ -741,6 +753,19 @@ function increase_feq()
 	fi
 }
 
+# Modify the site description of the given site
+# Input: $1-> site number, $2->description
+function modify_desc()
+{
+	if [ "${site_num[$1]}" != "" ] && [ "$2" != "" ]; then
+		site_desc[$1]="$2"
+		export_to_file
+	else
+		display_md_usage
+		exit 0
+	fi
+}
+
 # function main()
 if [ -z "$1" ]; then
 	display_usage
@@ -778,6 +803,10 @@ else
 			exit 0;;
 		pa )
 			ping_all_sites
+			display_sites
+			exit 0;;
+		md )
+			modify_desc $2 "$3"
 			display_sites
 			exit 0;;
 		rn )
