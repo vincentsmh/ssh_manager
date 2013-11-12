@@ -44,6 +44,15 @@ function strlen()
 	echo $len
 }
 
+function unset_site()
+{
+	unset site_num
+	unset site_userip
+	unset site_desc
+	unset site_status
+	unset site_feq
+}
+
 # Read all sites data into 'sites'
 function read_sites()
 {
@@ -55,11 +64,7 @@ function read_sites()
 	max_desc_len=11
 	max_status_len=6
 	max_feq_len=9
-	unset site_num
-	unset site_userip
-	unset site_desc
-	unset site_status
-	unset site_feq
+	unset_site
 
 	while read site
 	do
@@ -475,40 +480,6 @@ function display_usage()
 
 function find_max_len()
 {
-	local max_len=0
-	local len=0
-
-	if [ "$1" == "num" ]; then
-		for i in ${!site_num[*]}; do
-			len=$(strlen "${site_num[$i]}" "nospace")
-
-			if [ $len -gt $max_len ]; then
-				max_len=$len
-			fi
-		done
-	elif [ "$1" == "userip" ]; then
-		for i in ${!site_userip[*]}; do
-			len=$(strlen "${site_userip[$i]}" "nospace")
-
-			if [ $len -gt $max_len ]; then
-				max_len=$len
-			fi
-		done
-	elif [ "$1" == "desc" ]; then
-		for i in ${!site_desc[*]}; do
-			len=$(strlen "${site_desc[$i]}" "nospace" )
-
-			if [ $len -gt $max_len ]; then
-				max_len=$len
-			fi
-		done
-	fi
-
-	echo $max_len
-}
-
-function refind_max()
-{
 	local len=0
 
 	if [ $1 -eq 1 ];then
@@ -579,12 +550,10 @@ function del_node()
 			desc_check=1
 		fi
 
-		unset site_num[$num]
-		unset site_userip[$num]
-		unset site_desc[$num]
+		unset_entry $num
 	done
 
-	refind_max $num_check $userip_check $desc_check
+	find_max_len $num_check $userip_check $desc_check
 	export_to_file
 }
 
@@ -597,33 +566,49 @@ function check_python()
 	fi
 }
 
-function renumber_sites()
+function assign_tmp_entry()
 {
-	j=1
+	tmp_site_num[$1]="$2"
+	tmp_site_userip[$1]="$3"
+	tmp_site_desc[$1]="$4"
+	tmp_site_status[$1]="$5"
+	tmp_site_feq[$1]="$6"
+}
 
-	for i in ${!site_num[*]}; do
-		tmp_site_num[$j]="$j"
-		tmp_site_userip[$j]="${site_userip[$i]}"
-		tmp_site_desc[$j]="${site_desc[$i]}"
-		j=$(($j+1))
-	done
+function unset_tmp_site()
+{
+	unset tmp_site_num
+	unset tmp_site_userip
+	unset tmp_site_desc
+	unset tmp_site_status
+	unset tmp_site_feq
+}
 
-	unset site_num
-	unset site_userip
-	unset site_desc
-
+function clone_tmp_to_site()
+{
 	j=1
 	for i in ${!tmp_site_num[*]}; do
 		site_num[$j]="${tmp_site_num[$i]}"
 		site_userip[$j]="${tmp_site_userip[$i]}"
 		site_desc[$j]="${tmp_site_desc[$i]}"
+		site_status[$j]="${tmp_site_status[$i]}"
+		site_feq[$j]="${tmp_site_feq[$i]}"
+		j=$(($j+1))
+	done
+}
+
+function renumber_sites()
+{
+	j=1
+
+	for i in ${!site_num[*]}; do
+		assign_tmp_entry $j "$j" "${site_userip[$i]}" "${site_desc[$i]}" "${site_status[$i]}" "${site_feq[$i]}"
 		j=$(($j+1))
 	done
 
-	unset tmp_site_num
-	unset tmp_site_userip
-	unset tmp_site_desc
-
+	unset_site
+	clone_tmp_to_site
+	unset_tmp_site
 	export_to_file
 }
 
@@ -633,6 +618,24 @@ function display_move_usage()
 	color_msg 32 "m" -n
 	color_msg 38 ": Move a site #num1 to #num2"
 	color_msg 38 "        ex: cn m 10 3"
+}
+
+function assign_entry_data()
+{
+	site_num[$1]="$2"
+	site_userip[$1]="$3"
+	site_desc[$1]="$4"
+	site_status[$1]="$5"
+	site_feq[$1]="$6"
+}
+
+function unset_entry()
+{
+	unset site_num[$1]
+	unset site_userip[$1]
+	unset site_desc[$1]
+	unset site_status[$1]
+	unset site_feq[$1]
 }
 
 # Recursively move $1 to $2
@@ -650,16 +653,17 @@ function move_function()
 	# This will occurs when $1 > $2, we let $3 = $1 and this check is to limit
 	# the recursive routine stops at most on the position of $1.
 	if [ $2 -eq $3 ]; then
-		site_num[$2]=$2
-		site_userip[$2]="${site_userip[$1]}"
-		site_desc[$2]="${site_desc[$1]}"
+		assign_entry_data $2 "$2" "${site_userip[$1]}" "${site_desc[$1]}" "${site_status[$1]}" "${site_feq[$1]}"
 		return 0
 	fi
 
 	# local variable for recursive call
-	local num="${site_num[$2]}"
+	#local num="${site_num[$2]}"
+	local num="$2"
 	local userip="${site_userip[$1]}"
 	local desc="${site_desc[$1]}"
+	local status="${site_status[$1]}"
+	local feq="${site_feq[$1]}"
 
 	# Check if the dest site number is existed.
 	if [ "${site_num[$2]}" != "" ]; then
@@ -668,16 +672,12 @@ function move_function()
 
 	# We have make sure the dest is empty or is moved to its next. So, we can
 	# assign value to it (move over).
-	site_num[$2]="$num"
-	site_userip[$2]="$userip"
-	site_desc[$2]="$desc"
+	assign_entry_data $2 "$num" "$userip" "$desc" "$status" "$feq"
 
 	# When $2 > $1, after we move $1 to its next, we have to unset its original
 	# position
 	if [ $2 -gt $1 ]; then
-		unset site_num[$1]
-		unset site_userip[$1]
-		unset site_desc[$1]
+		unset_entry $1
 	fi
 }
 
@@ -807,24 +807,6 @@ function find_mim_feq()
 	echo $i
 }
 
-function unset_entry()
-{
-	unset site_num[$1]
-	unset site_userip[$1]
-	unset site_desc[$1]
-	unset site_status[$1]
-	unset site_feq[$1]
-}
-
-function set_entry_data()
-{
-	site_num[$1]="$2"
-	site_userip[$1]="$3"
-	site_desc[$1]="$4"
-	site_status[$1]="$5"
-	site_feq[$1]="$6"
-}
-
 function display_usage_sbf()
 {
 	color_msg 38 "   - " -n
@@ -854,24 +836,15 @@ function sort_by_feq()
 			found_i=$(find_mim_feq)
 		fi
 
-		tmp_site_num[$i]="$i"
-		tmp_site_userip[$i]="${site_userip[$found_i]}"
-		tmp_site_desc[$i]="${site_desc[$found_i]}"
-		tmp_site_status[$i]="${site_status[$found_i]}"
-		tmp_site_feq[$i]="${site_feq[$found_i]}"
+		assign_tmp_entry $i "$i" "${site_userip[$found_i]}" "${site_desc[$found_i]}" "${site_status[$found_i]}" "${site_feq[$found_i]}"
 		unset_entry $found_i
 	done
 
 	for i in ${!tmp_site_num[*]}; do
-		set_entry_data $i "${tmp_site_num[$i]}" "${tmp_site_userip[$i]}" "${tmp_site_desc[$i]}" "${tmp_site_status[$i]}" "${tmp_site_feq[$i]}"
+		assign_entry_data $i "${tmp_site_num[$i]}" "${tmp_site_userip[$i]}" "${tmp_site_desc[$i]}" "${tmp_site_status[$i]}" "${tmp_site_feq[$i]}"
 	done
 
-	unset tmp_site_num
-	unset tmp_site_userip
-	unset tmp_site_desc
-	unset tmp_site_status
-	unset tmp_site_feq
-
+	unset_tmp_site
 	export_to_file
 }
 
