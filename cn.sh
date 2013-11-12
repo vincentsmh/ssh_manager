@@ -248,7 +248,7 @@ function scp_function()
 	for i in $@
 	do
 		if [ "${site_num[$i]}" != "" ]; then
-			scp -r "$2" ${site_userip[$i]}:
+			scp -r "$file" "${site_userip[$i]}:"
 		fi
 	done
 
@@ -420,7 +420,7 @@ function display_usage()
 {
 	echo -e
 	color_msg 38 "Usage: cn " -n
-	color_msg 32 "<num|l|r|a|d|s|rn>" -n
+	color_msg 32 "<num|l|r|a|d|s|p|m|pa|rn|md>" -n
 	color_msg 33 " [args]"
 	color_msg 38 "   - " -n
 	color_msg 32 "num" -n
@@ -464,6 +464,8 @@ function display_usage()
 	color_msg 38 "   - " -n
 	color_msg 32 "rn" -n
 	color_msg 38 ": reorder the number of all sites."
+
+	display_usage_sbf
 
 	display_move_usage
 	echo -e
@@ -766,6 +768,113 @@ function modify_desc()
 	fi
 }
 
+# Find the max site.
+# Output: index
+function find_max_feq()
+{
+	local max=0
+	local i=0
+
+	for j in ${!site_num[*]}; do
+		if [ ${site_feq[$j]} -gt $max ]; then
+			max=${site_feq[$j]}
+			i=$j
+		fi
+	done
+
+	echo $i
+}
+
+# Find the max site.
+# Output: index
+function find_mim_feq()
+{
+	local mim=0
+	local i=0
+	local first_loop=0
+
+	for j in ${!site_num[*]}; do
+		if [ $first_loop -eq 0 ]; then
+			mim=${site_feq[$j]}
+			i=$j
+			first_loop=1
+		elif [ $mim -gt ${site_feq[$j]} ]; then
+			mim=${site_feq[$j]}
+			i=$j
+		fi
+	done
+
+	echo $i
+}
+
+function unset_entry()
+{
+	unset site_num[$1]
+	unset site_userip[$1]
+	unset site_desc[$1]
+	unset site_status[$1]
+	unset site_feq[$1]
+}
+
+function set_entry_data()
+{
+	site_num[$1]="$2"
+	site_userip[$1]="$3"
+	site_desc[$1]="$4"
+	site_status[$1]="$5"
+	site_feq[$1]="$6"
+}
+
+function display_usage_sbf()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "sf: cn sf [D|I]"
+	color_msg 38 "         Sort sites by the frequency. D: decreasing, I: increasing"
+}
+
+# Sort by frequency
+# Input: $1-> "I" means increasing and "D" means decreasing
+function sort_by_feq()
+{
+	if [ "$1" == "I" ]; then
+		local max=0
+	elif [ "$1" == "D" ]; then
+		local mim=0
+	else
+		display_usage_sbf
+		exit 0
+	fi
+
+	local found_i=0
+
+	for ((i=1;i<=$num_of_sites;i++)); do
+		if [ "$1" == "D" ]; then
+			found_i=$(find_max_feq)
+		elif [ "$1" == "I" ];then
+			found_i=$(find_mim_feq)
+		fi
+
+		tmp_site_num[$i]="$i"
+		tmp_site_userip[$i]="${site_userip[$found_i]}"
+		tmp_site_desc[$i]="${site_desc[$found_i]}"
+		tmp_site_status[$i]="${site_status[$found_i]}"
+		tmp_site_feq[$i]="${site_feq[$found_i]}"
+		unset_entry $found_i
+	done
+
+	for i in ${!tmp_site_num[*]}; do
+		set_entry_data $i "${tmp_site_num[$i]}" "${tmp_site_userip[$i]}" "${tmp_site_desc[$i]}" "${tmp_site_status[$i]}" "${tmp_site_feq[$i]}"
+	done
+
+	unset tmp_site_num
+	unset tmp_site_userip
+	unset tmp_site_desc
+	unset tmp_site_status
+	unset tmp_site_feq
+
+	export_to_file
+}
+
 # function main()
 if [ -z "$1" ]; then
 	display_usage
@@ -811,6 +920,10 @@ else
 			exit 0;;
 		rn )
 			renumber_sites
+			display_sites
+			exit 0;;
+		sf )
+			sort_by_feq "$2"
 			display_sites
 			exit 0;;
 		uninstall )
