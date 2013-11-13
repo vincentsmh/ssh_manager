@@ -5,7 +5,9 @@ sites and connect to them quickly.
 
 Requirement
 ===========
-python
+- Linux/Unix system
+- Python: if you would like to use some features, like key registration to
+some site, you need to install python in your system inadvance.
 
 Install
 ==========

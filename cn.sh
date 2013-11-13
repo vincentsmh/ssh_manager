@@ -199,6 +199,23 @@ function print_head_tail()
 
 }
 
+# Display the given site
+# Input: $1-> color, $2->site number
+function display_entry()
+{
+		color_msg 37 "| " -n
+		color_msg_len $1 "$2" $max_num_len -n
+		color_msg 37 " | " -n
+		color_msg_len $1 "${site_userip[$2]}" $max_userip_len -n
+		color_msg 37 " | " -n
+		color_msg_len $1 "${site_desc[$2]}" $max_desc_len -n
+		color_msg 37 " | " -n
+		color_msg_len $1 "${site_status[$2]}" $max_status_len -n
+		color_msg 37 " | " -n
+		color_msg_len $1 "${site_feq[$2]}" $max_feq_len -n
+		color_msg 37 " |"
+}
+
 # Display all of the remote sites defined in conn.data
 function display_sites()
 {
@@ -209,18 +226,9 @@ function display_sites()
 
 	# Display from '1'
 	for i in ${!site_num[*]}; do
-		color_msg 37 "| " -n
-		color_msg_len $color "$i" $max_num_len -n
-		color_msg 37 " | " -n
-		color_msg_len $color "${site_userip[$i]}" $max_userip_len -n
-		color_msg 37 " | " -n
-		color_msg_len $color "${site_desc[$i]}" $max_desc_len -n
-		color_msg 37 " | " -n
-		color_msg_len $color "${site_status[$i]}" $max_status_len -n
-		color_msg 37 " | " -n
-		color_msg_len $color "${site_feq[$i]}" $max_feq_len -n
-		color_msg 37 " |"
+		display_entry $color $i
 		color=$((color+1))
+
 		if [ $color -eq 38 ]; then
 			color=32
 		fi
@@ -472,6 +480,10 @@ function display_usage()
 
 	display_usage_sbf
 
+	color_msg 38 "   - " -n
+	color_msg 32 "doff" -n
+	color_msg 38 ": Delete sites whose status are Off"
+
 	display_move_usage
 	echo -e
 	display_author
@@ -520,7 +532,7 @@ function find_max_len()
 }
 
 # Delete the given node
-function del_node()
+function del_site()
 {
 	if [ -z "$2" ]; then
 		display_sites
@@ -848,6 +860,42 @@ function sort_by_feq()
 	export_to_file
 }
 
+function del_off_site()
+{
+	local color=32
+	local yn=""
+	local del=""
+
+	color_msg 38 "You are going to remove the following sites:"
+	print_head_tail "head"
+
+	for i in ${!site_num[*]}; do
+		if [ "${site_status[$i]}" == "Off" ]; then
+			display_entry $color $i
+			color=$((color+1))
+			del="$(echo $del) $(echo $i)"
+
+			if [ $color -eq 38 ]; then
+				color=32
+			fi
+		fi
+	done
+
+	print_head_tail "tail"
+	color_msg 38 "Are you sure " -n
+	read -p "(y/n)" yn
+
+	case $yn in
+		[Yy]* )
+			for i in ${!del[*]}; do
+				del_site $del
+			done
+			;;
+		[Nn]* ) exit 0 ;;
+		* ) echo "Please answer y or n";;
+	esac
+}
+
 # function main()
 if [ -z "$1" ]; then
 	display_usage
@@ -864,7 +912,7 @@ else
 			display_sites
 			exit 0;;
 		[d] )
-			del_node $@
+			del_site $@
 			display_sites
 			exit 0;;
 		[s] )
@@ -897,6 +945,10 @@ else
 			exit 0;;
 		sf )
 			sort_by_feq "$2"
+			display_sites
+			exit 0;;
+		doff )
+			del_off_site
 			display_sites
 			exit 0;;
 		uninstall )
