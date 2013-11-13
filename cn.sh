@@ -490,6 +490,10 @@ function display_usage()
 	echo -e
 }
 
+# Find maximum string length.
+# Input: $1->find the maximum number string length
+#        $2->find the maximum userip string length
+#        $3->find maximum description string length
 function find_max_len()
 {
 	local len=0
@@ -773,6 +777,7 @@ function modify_desc()
 {
 	if [ "${site_num[$1]}" != "" ] && [ "$2" != "" ]; then
 		site_desc[$1]="$2"
+		find_max_len 0 0 1
 		export_to_file
 	else
 		display_md_usage
