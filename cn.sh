@@ -881,6 +881,12 @@ function del_off_site()
 		fi
 	done
 
+	if [ "$del" == "" ]; then
+		echo -e
+		color_msg 38 "No offline sites."
+		exit 0
+	fi
+
 	print_head_tail "tail"
 	color_msg 38 "Are you sure " -n
 	read -p "(y/n)" yn
@@ -888,7 +894,7 @@ function del_off_site()
 	case $yn in
 		[Yy]* )
 			for i in ${!del[*]}; do
-				del_site $del
+				del_site d $del
 			done
 			;;
 		[Nn]* ) exit 0 ;;
