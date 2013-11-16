@@ -484,6 +484,10 @@ function display_usage()
 	color_msg 32 "doff" -n
 	color_msg 38 ": Delete sites whose status are Off"
 
+	color_msg 38 "   - " -n
+	color_msg 32 "rst: cn rst [#num]" -n
+	color_msg 38 ": Reset sites' frequency to 0."
+
 	display_move_usage
 	echo -e
 	display_author
@@ -907,6 +911,23 @@ function del_off_site()
 	esac
 }
 
+# Reset site's frequency
+# Input: none or site numbers
+function reset_feq()
+{
+	if [ -z $2 ]; then
+		for i in ${!site_num[*]}; do
+			site_feq[$i]=0
+		done
+	else
+		shift 1
+
+		for i in $@; do
+			site_feq[$i]=0
+		done
+	fi
+}
+
 # function main()
 if [ -z "$1" ]; then
 	display_usage
@@ -956,6 +977,10 @@ else
 			exit 0;;
 		sf )
 			sort_by_feq "$2"
+			display_sites
+			exit 0;;
+		rst )
+			reset_feq $@
 			display_sites
 			exit 0;;
 		doff )
