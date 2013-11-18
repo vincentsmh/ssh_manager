@@ -415,6 +415,14 @@ function display_reg_usage()
 	color_msg 38 "        ex: cn r 3"
 }
 
+function display_deploy_usage()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "dp" -n
+	color_msg 38 ": cn dp #num [#num2] [#num3] ..."
+	color_msg 38 "       Deploy this utility to some sites."
+}
+
 # Display the usage of 'cn' command
 function display_usage()
 {
@@ -477,6 +485,9 @@ function display_usage()
 	color_msg 38 ": Reset sites' frequency to 0."
 
 	display_move_usage
+
+	display_deploy_usage
+
 	echo -e
 	display_author
 	echo -e
@@ -925,7 +936,43 @@ function connect_by()
 	fi
 }
 
-# function main()
+# Find utility 'cn' path
+function find_this_utility()
+{
+	if [ -f "/usr/bin/cn" ]; then
+		echo "/usr/bin/cn"
+	elif [ -f "/usr/local/bin/cn" ]; then
+		echo "usr/local/bin/cn"
+	fi
+}
+
+# Deploy this utility to the given site(s)
+# Input: $1,2,...->site number
+function deploy_to()
+{
+	if [ -z $1 ]; then
+		display_deploy_usage
+		exit 0
+	fi
+
+	local utility_path=$(find_this_utility)
+
+	if [ "utility_path" == "" ]; then
+		color_msg 31 "Cannot find 'cn' utility in your system!"
+		exit 1
+	fi
+
+	scp_function s $utility_path "$@"
+	scp_function s $DATA "$@"
+
+	for i in $@; do
+		color_msg 38 "Deploying ${site_userip[$i]}..."
+		ssh -t ${site_userip[$i]} "sudo mv ~/cn /usr/local/bin/cn"
+		color_msg 32 "Deploy ${site_userip[$i]} successfully."
+	done
+}
+
+# main()
 if [ -z "$1" ]; then
 	display_usage
 else
@@ -985,6 +1032,10 @@ else
 			exit 0;;
 		uninstall )
 			uninstall
+			exit 0;;
+		dp )
+			shift 1
+			deploy_to $@
 			exit 0;;
 	esac
 
