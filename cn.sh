@@ -930,6 +930,8 @@ function reset_feq()
 			site_feq[$i]=0
 		done
 	fi
+
+	export_to_file
 }
 
 # Check if the system is OS X
@@ -939,27 +941,19 @@ function is_osx()
 	echo "$check"
 }
 
-# Mac's command for open connection the given site
-# Input: $1->protocol, $2->IP
-function osx_connect_cmd()
-{
-	case "$1" in
-	ftp )
-		echo "open ftp://$2" ;;
-	vncviewer )
-		echo "open vnc://$2" ;;
-	rdesktop )
-		echo "open rdp://$2" ;;
-	esac
-}
-
 # Connect to the given site by the given protocol(command)
 # Input: $1->utility name
 function connect_by()
 {
 	if [ "$(is_osx)" == "1" ]; then
-		local cmd=$(osx_connect_cmd "$1" "$2")
-		$cmd
+		case "$1" in
+		ftp )
+			open ftp://$2 ;;
+		vncviewer )
+			open vnc://$2 ;;
+		rdesktop )
+			open rdp://$2 ;;
+		esac
 	else
 		check=$(command -v "$1" | grep -c "$1")
 
