@@ -437,9 +437,13 @@ function display_usage()
 	color_msg 33 " [args]"
 	color_msg 38 "   - " -n
 	color_msg 32 "num" -n
-	color_msg 38 ": SSH to site #num."
-	color_msg 38 "          ex. cn 2"
-	color_msg 38 "          ex. cn 3 -X (with X-forwarding)"
+	color_msg 38 ": cn #num " -n
+	color_msg 33 "[x|f|v|r]"
+	color_msg 38 "          ex. cn 2 (SSH to site 2)"
+	color_msg 38 "          ex. cn 2 x (with X-forwarding)"
+	color_msg 38 "          ex. cn 2 f (FTP to site 2)"
+	color_msg 38 "          ex. cn 2 r (RDP to site 2)"
+	color_msg 38 "          ex. cn 2 v (VNC to site 2)"
 
 	color_msg 38 "   - " -n
 	color_msg 32 "l" -n
@@ -928,6 +932,21 @@ function reset_feq()
 	fi
 }
 
+# Connect to the given site by the given protocol(command)
+# Input: $1->utility name
+function connect_by()
+{
+	check=$(command -v "$1" | grep -c "$1")
+
+	if [ "$check" == "1" ]; then
+		color_msg 32 "Connecting ($1) to $ip ..."
+		$1 $2
+	else
+		color_msg 31 "Require utility: " -n
+		color_msg 32 "$1"
+	fi
+}
+
 # function main()
 if [ -z "$1" ]; then
 	display_usage
@@ -998,6 +1017,32 @@ else
 		color_msg 32 "[$1] does not exist"
 	else
 		increase_feq $1
-		ssh $2 ${site_userip[$1]}
+
+		if [ -z "$2" ]; then
+			color_msg 32 "SSH to ${site_userip[$1]}"
+			ssh ${site_userip[$1]}
+			exit 0
+		else
+			ip=$(find_ip $1)
+
+			case "$2" in
+			[f] )
+				connect_by "ftp" "$ip"
+				;;
+			[v] )
+				connect_by "vncviewer" "$ip"
+				;;
+			[r] )
+				connect_by "rdesktop" "$ip"
+				;;
+			[x] )
+				color_msg 32 "SSH to ${site_userip[$1]} with X-Forwarding"
+				ssh -X ${site_userip[$1]}
+				;;
+			[*] )
+				color_msg 32 "Unrecognized argument: $2."
+				;;
+			esac
+		fi
 	fi
 fi
