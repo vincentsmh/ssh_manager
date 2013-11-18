@@ -3,10 +3,7 @@
 DATA="$HOME/conn.data"
 
 # Color function
-# Parameters:
-#    - $1: color number
-#    - $2: message
-#    - $3: newline
+# Input: $1->color, $2->message, $3->newline or not
 function color_msg
 {
 	echo -e $3 "\033[1;$1m$2\033[0m"
@@ -26,7 +23,7 @@ function log()
 
 function check_n_exit()
 {
-	if [ ! $1 -eq 0 ]; then
+	if [ $1 -ne 0 ]; then
 		color_msg 31 "$2"
 
 		exit 1
@@ -247,7 +244,7 @@ function display_scp()
 }
 
 # Secure copy file to the remote site.
-# Input: $1->s, $2->the file which will be copied
+# Input: $1->s, $2->the file which will be copied, $3,4,...->site number
 function scp_function()
 {
 	if [ -z $1 ] || [ -z $2 ]; then
@@ -258,8 +255,7 @@ function scp_function()
 	file="$2"
 	shift 2
 
-	for i in $@
-	do
+	for i in $@; do
 		if [ "${site_num[$i]}" != "" ]; then
 			scp -r "$file" "${site_userip[$i]}:"
 		fi
@@ -267,26 +263,11 @@ function scp_function()
 
 	if [ $? -eq 0 ]; then
 		color_msg 32 "Copy file successfull."
+		return 0
 	else
 		color_msg 31 "Copy file failed."
-	fi
-}
-
-
-function find_regkeybin()
-{
-	bin=$(whereis regkey.py | awk {'print $2'})
-
-	if [ "$bin" == "" ]; then
-		bin=$(whereis regkey.py)
-	fi
-
-	if [ "$bin" == "" ]; then
 		return 1
 	fi
-
-	echo $bin
-	return 0
 }
 
 function find_pk()
@@ -299,14 +280,13 @@ function find_pk()
 	fi
 }
 
-# This function will regiester local's public key (id_rsa.pub) to the remote site.
+# This function will regiester local's public key (id_rsa.pub) to the remote
+# site.
+# Input: $1->site number
 function reg_key()
 {
-	if [ -z $1 ] || [ -z $2 ]; then
-		color_msg 32 "Register public key to the remote site"
-		color_msg 32 "Usage: conn r num pwd"
-		color_msg 32 "   - num: the number of the site"
-		color_msg 32 "   - pwd: the password to login the remote site"
+	if [ -z $1 ]; then
+		display_reg_usage
 		exit 0
 	fi
 
@@ -321,22 +301,19 @@ function reg_key()
 	local user=$(find_user "$1")
 	check_n_exit $? "[$1] does not exist."
 
-	local reg_bin=$(find_regkeybin)
+	# Copy local public key to the remote site.
+	color_msg 32 "Copying local public key to [$ip] ..."
+	scp_function s "$pk" "$1"
+	check_n_exit $? "Copy file to site [$1] failed."
 
-	if [ ! $? -eq 0 ]; then
-		color_msg 31 "Cannot find regkey.py."
-		exit 1
-	fi
+	# Cat public key to remote site's authorized_key
+	color_msg 32 "Registering public key to [$ip] ..."
+	local cmd="cat id_rsa.pub >> ~/.ssh/authorized_keys; rm -rf id_rsa.pub"
+	ssh ${site_userip[$1]} "$cmd"
+	check_n_exit $? "Register public key failed"
 
-	python $reg_bin $ip $user $2 $pk
-
-	if [ $? -eq 0 ]; then
-		echo -e
-		color_msg 32 "Register public key to $ip successfully."
-	else
-		echo -e
-		color_msg 31 "Register public key to $ip failed."
-	fi
+	echo -e
+	color_msg 32 "Register public key to $ip successfully."
 }
 
 function add_node_to_num()
@@ -369,8 +346,7 @@ function add_node_to_num()
 # Read suitable number for insertion.
 function find_insert_num()
 {
-	for ((i=1;i<=$num_of_sites;i++ ))
-	do
+	for ((i=1;i<=$num_of_sites;i++ )); do
 		if [ "${site_num[$i]}" == "" ]; then
 			break
 		fi
@@ -428,6 +404,17 @@ function display_md_usage()
 
 }
 
+function display_reg_usage()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "r" -n
+	color_msg 38 ": cn r #num"
+	color_msg 38 "        Register public key to site #num. You would be asked to input password for"
+	color_msg 38 "        several times. After the registration, you can connect to that site without"
+	color_msg 38 "        type password."
+	color_msg 38 "        ex: cn r 3"
+}
+
 # Display the usage of 'cn' command
 function display_usage()
 {
@@ -449,10 +436,7 @@ function display_usage()
 	color_msg 32 "l" -n
 	color_msg 38 ": list all sites."
 
-	color_msg 38 "   - " -n
-	color_msg 32 "r" -n
-	color_msg 38 ": Register public key to site #num. "
-	color_msg 38 "        ex: cn r 3 password"
+	display_reg_usage
 
 	color_msg 38 "   - " -n
 	color_msg 32 "a" -n
@@ -560,8 +544,7 @@ function del_site()
 	local desc_check=0
 
 	# Find indexes of the deleting site
-	for num in $@
-	do
+	for num in $@; do
 		if [ $(strlen "${site_num[$num]}") -eq $max_num_len ]; then
 			num_check=1
 		fi
@@ -579,15 +562,6 @@ function del_site()
 
 	find_max_len $num_check $userip_check $desc_check
 	export_to_file
-}
-
-function check_python()
-{
-	check=`whereis python | grep -c bin`
-	if [ "$check" == "0" ]; then
-		color_msg 31 "Please install \"python\" before you use this function."
-		exit 0
-	fi
 }
 
 function assign_tmp_entry()
@@ -715,21 +689,8 @@ function uninstall()
 		local DEPLOY_FOLDER="/usr/bin"
 	fi
 
-	local check=0
-	local FILES="cn regkey.py regkey.pyc pexpect.py pexpect.pyc"
-
-	for file in $FILES; do
-		rm -rf $DEPLOY_FOLDER/$file
-
-		if [ $? -ne 0 ]; then
-			color_msg 32 "Please make sure you have root permission. (sudo cn uninstall)"
-			check=1
-		fi
-	done
-
+	rm -rf $DEPLOY_FOLDER/cn
 	rm -rf $DATA
-
-	# Check if all files are removed
 }
 
 # Ping the given site to test if the it is reachable.
@@ -947,12 +908,9 @@ function connect_by()
 {
 	if [ "$(is_osx)" == "1" ]; then
 		case "$1" in
-		ftp )
-			open ftp://$2 ;;
-		vncviewer )
-			open vnc://$2 ;;
-		rdesktop )
-			open rdp://$2 ;;
+		ftp ) open ftp://$2 ;;
+		vncviewer ) open vnc://$2 ;;
+		rdesktop ) open rdp://$2 ;;
 		esac
 	else
 		check=$(command -v "$1" | grep -c "$1")
@@ -990,8 +948,7 @@ else
 			scp_function "$@"
 			exit 0;;
 		[r] )
-			check_python
-			reg_key $2 $3
+			reg_key $2
 			exit 0;;
 		[m] )
 			move_function $2 $3 $2
