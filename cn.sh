@@ -932,18 +932,44 @@ function reset_feq()
 	fi
 }
 
+# Check if the system is OS X
+function is_osx()
+{
+	check=$(uname -a | grep -c Mac)
+	echo "$check"
+}
+
+# Mac's command for open connection the given site
+# Input: $1->protocol, $2->IP
+function osx_connect_cmd()
+{
+	case "$1" in
+	ftp )
+		echo "open ftp://$2" ;;
+	vncviewer )
+		echo "open vnc://$2" ;;
+	rdesktop )
+		echo "open rdp://$2" ;;
+	esac
+}
+
 # Connect to the given site by the given protocol(command)
 # Input: $1->utility name
 function connect_by()
 {
-	check=$(command -v "$1" | grep -c "$1")
-
-	if [ "$check" == "1" ]; then
-		color_msg 32 "Connecting ($1) to $ip ..."
-		$1 $2
+	if [ "$(is_osx)" == "1" ]; then
+		local cmd=$(osx_connect_cmd "$1" "$2")
+		$cmd
 	else
-		color_msg 31 "Require utility: " -n
-		color_msg 32 "$1"
+		check=$(command -v "$1" | grep -c "$1")
+
+		if [ "$check" == "1" ]; then
+			color_msg 32 "Connecting ($1) to $ip ..."
+			$1 $2
+		else
+			color_msg 31 "Require utility: " -n
+			color_msg 32 "$1"
+		fi
 	fi
 }
 
