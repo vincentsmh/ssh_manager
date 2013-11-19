@@ -338,13 +338,19 @@ function reg_key()
 	check_n_exit $? "[$1] does not exist."
 
 	# Copy local public key to the remote site.
-	color_msg 32 "Copying local public key to [$ip] ..."
+	echo -e
+	color_msg 32 "Copying local public key to [" -n
+	color_msg 33 "$ip" -n
+	color_msg 32 "] ..."
 	scp_to "$pk" "$1"
 	check_n_exit $? "Copy file to site [$1] failed."
 
 	# Cat public key to remote site's authorized_key
-	color_msg 32 "Registering public key to [$ip] ..."
-	local cmd="cat id_rsa.pub >> ~/.ssh/authorized_keys; rm -rf id_rsa.pub"
+	echo -e
+	color_msg 32 "Registering public key to [" -n
+	color_msg 33 "$ip" -n
+	color_msg 32 "] ..."
+	local cmd="mkdir -p ~/.ssh; cat id_rsa.pub >> ~/.ssh/authorized_keys; rm -rf id_rsa.pub"
 	ssh ${site_userip[$1]} "$cmd"
 	check_n_exit $? "Register public key failed"
 
