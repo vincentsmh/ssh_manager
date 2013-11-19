@@ -423,6 +423,14 @@ function display_deploy_usage()
 	color_msg 38 "       Deploy this utility to some sites."
 }
 
+function display_cmd_usage()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "cmd" -n
+	color_msg 38 ": cn cmd \"commands\" #num [#num2] [#num3] ..."
+	color_msg 38 "          Send commands to some sites"
+}
+
 # Display the usage of 'cn' command
 function display_usage()
 {
@@ -487,6 +495,8 @@ function display_usage()
 	display_move_usage
 
 	display_deploy_usage
+
+	display_cmd_usage
 
 	echo -e
 	display_author
@@ -972,6 +982,27 @@ function deploy_to()
 	done
 }
 
+# Send command to some sites
+# Input: $1->command, $2,3...->site number
+function cmd_to()
+{
+	if [ -z "$1" ] || [ -z "$2" ]; then
+		display_cmd_usage
+		exit 0
+	fi
+
+	local cmd="$1"
+	local ip=""
+	shift 1
+
+	for i in $@; do
+		ip=$(find_ip $i)
+		color_msg 32 "Send command to " -n
+		color_msg 33 "$ip"
+		ssh -t ${site_userip[$i]} "$cmd"
+	done
+}
+
 # main()
 if [ -z "$1" ]; then
 	display_usage
@@ -1036,6 +1067,10 @@ else
 		dp )
 			shift 1
 			deploy_to $@
+			exit 0;;
+		cmd )
+			shift 1
+			cmd_to $@
 			exit 0;;
 	esac
 
