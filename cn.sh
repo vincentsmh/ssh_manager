@@ -235,25 +235,61 @@ function display_sites()
 	echo -e
 }
 
-function display_scp()
+function display_scp_to()
 {
 	color_msg 38 "   - " -n
-	color_msg 32 "s" -n
-	color_msg 38 ": scp a file/directory to the given site. "
-	color_msg 38 "        ex: cn s file 3"
+	color_msg 32 "ct" -n
+	color_msg 38 ": cn ct \"file\" #num1 [#num2] [#num3] [...]"
+	color_msg 38 "         scp a file/directory to the given site. "
+	color_msg 38 "         ex: cn ct file 3"
 }
 
-# Secure copy file to the remote site.
-# Input: $1->s, $2->the file which will be copied, $3,4,...->site number
-function scp_function()
+function display_scp_from()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "cf" -n
+	color_msg 38 ": cn cf \"file\" #num1 [#num2] [#num3] [...]"
+	color_msg 38 "         scp a remote file/directory of the given sites to local"
+	color_msg 38 "         ex: cn cf file 3 (=> scp user@site3_ip:file .)"
+}
+
+# Secure copy file from the remote site.
+# Input: $1->the file which will be copied, $2,3,...->site number
+function scp_from()
 {
 	if [ -z $1 ] || [ -z $2 ]; then
-		display_scp
+		display_scp_from
 		exit 0
 	fi
 
-	file="$2"
-	shift 2
+	file="$1"
+	shift 1
+
+	for i in $@; do
+		if [ "${site_num[$i]}" != "" ]; then
+			scp -r "${site_userip[$i]}:$file" .
+		fi
+	done
+
+	if [ $? -eq 0 ]; then
+		color_msg 32 "Copy file successfull."
+		return 0
+	else
+		color_msg 31 "Copy file failed."
+		return 1
+	fi
+}
+# Secure copy file to the remote site.
+# Input: $1->the file which will be copied, $2,3,...->site number
+function scp_to()
+{
+	if [ -z $1 ] || [ -z $2 ]; then
+		display_scp_to
+		exit 0
+	fi
+
+	file="$1"
+	shift 1
 
 	for i in $@; do
 		if [ "${site_num[$i]}" != "" ]; then
@@ -303,7 +339,7 @@ function reg_key()
 
 	# Copy local public key to the remote site.
 	color_msg 32 "Copying local public key to [$ip] ..."
-	scp_function s "$pk" "$1"
+	scp_to "$pk" "$1"
 	check_n_exit $? "Copy file to site [$1] failed."
 
 	# Cat public key to remote site's authorized_key
@@ -436,7 +472,7 @@ function display_usage()
 {
 	echo -e
 	color_msg 38 "Usage: cn " -n
-	color_msg 32 "<num|l|r|a|d|s|p|m|pa|rn|md>" -n
+	color_msg 32 "<num|l|r|a|d|ct|cf|p|m|pa|rn|md|sf|doff|rst|dp|cmd>" -n
 	color_msg 33 " [args]"
 	color_msg 38 "   - " -n
 	color_msg 32 "num" -n
@@ -465,7 +501,8 @@ function display_usage()
 	color_msg 38 ": Delete a site (num). "
 	color_msg 38 "        ex: cn d 3"
 
-	display_scp
+	display_scp_to
+	display_scp_from
 
 	color_msg 38 "   - " -n
 	color_msg 32 "p" -n
@@ -972,8 +1009,8 @@ function deploy_to()
 		exit 1
 	fi
 
-	scp_function s $utility_path "$@"
-	scp_function s $DATA "$@"
+	scp_to $utility_path "$@"
+	scp_to $DATA "$@"
 
 	for i in $@; do
 		color_msg 38 "Deploying ${site_userip[$i]}..."
@@ -1022,9 +1059,6 @@ else
 			del_site $@
 			display_sites
 			exit 0;;
-		[s] )
-			scp_function "$@"
-			exit 0;;
 		[r] )
 			reg_key $2
 			exit 0;;
@@ -1036,6 +1070,14 @@ else
 		[p] )
 			ping_site $2
 			display_sites
+			exit 0;;
+		ct )
+			shift 1
+			scp_to "$@"
+			exit 0;;
+		cf )
+			shift 1
+			scp_from "$@"
 			exit 0;;
 		pa )
 			ping_all_sites
