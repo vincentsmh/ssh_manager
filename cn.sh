@@ -967,21 +967,26 @@ function is_osx()
 }
 
 # Connect to the given site by the given protocol(command)
-# Input: $1->utility name
+# Input: $1->utility name, $2->IP, $3->Port
 function connect_by()
 {
 	if [ "$(is_osx)" == "1" ]; then
 		case "$1" in
-		ftp ) open ftp://$2 ;;
-		vncviewer ) open vnc://$2 ;;
-		rdesktop ) open rdp://$2 ;;
+			ftp ) open ftp://$2$3 ;;
+			vncviewer ) open vnc://$2$3 ;;
+			rdesktop ) open rdp://$2$3 ;;
 		esac
 	else
 		check=$(command -v "$1" | grep -c "$1")
 
 		if [ "$check" == "1" ]; then
 			color_msg 32 "Connecting ($1) to $ip ..."
-			$1 $2
+			case "$1" in
+				ftp ) local port=$(echo $3 | awk -F ":" {'print $2'})
+					$1 $2 $port;;
+				vncviewer ) $1 $2:$3;;
+				rdesktop ) $1 $2$3;;
+			esac
 		else
 			color_msg 31 "Require utility: " -n
 			color_msg 32 "$1"
@@ -1044,6 +1049,18 @@ function cmd_to()
 		color_msg 33 "$ip"
 		ssh -t ${site_userip[$i]} "$cmd"
 	done
+}
+
+# Search sites by keyword
+# Input: $1,2,...->keywords
+function search_site_by_keyword()
+{
+	if [ -z $1 ]; then
+		display_sh_usage
+		exit 0
+	fi
+
+
 }
 
 # main()
@@ -1120,6 +1137,10 @@ else
 			shift 1
 			cmd_to $@
 			exit 0;;
+		sh )
+			shift 1
+			search_site_by_keyword $@
+			exit 0;;
 	esac
 
 	is_site_exist $1
@@ -1138,13 +1159,13 @@ else
 
 			case "$2" in
 			[f] )
-				connect_by "ftp" "$ip"
+				connect_by "ftp" "$ip" "$3"
 				;;
 			[v] )
-				connect_by "vncviewer" "$ip"
+				connect_by "vncviewer" "$ip" "$3"
 				;;
 			[r] )
-				connect_by "rdesktop" "$ip"
+				connect_by "rdesktop" "$ip" "$3"
 				;;
 			[x] )
 				color_msg 32 "SSH to ${site_userip[$1]} with X-Forwarding"
