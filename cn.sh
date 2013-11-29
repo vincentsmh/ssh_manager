@@ -214,6 +214,7 @@ function display_entry()
 }
 
 # Display all of the remote sites defined in conn.data
+# Input $1,$2,...->keywords
 function display_sites()
 {
 	color=32
@@ -221,15 +222,38 @@ function display_sites()
 	# Print table head
 	print_head_tail "head"
 
-	# Display from '1'
-	for i in ${!site_num[*]}; do
-		display_entry $color $i
-		color=$((color+1))
+	if [ -z $1 ]; then
+		# Display all site entries
+		for i in ${!site_num[*]}; do
+			display_entry $color $i
+			color=$((color+1))
 
-		if [ $color -eq 38 ]; then
-			color=32
-		fi
-	done
+			if [ $color -eq 38 ]; then
+				color=32
+			fi
+		done
+	else
+		local kw_exist_userip=0
+		local kw_exist_desc=0
+
+		for i in ${!site_num[*]}; do
+			for kw in $@; do
+				kw_exist_userip=$(echo "${site_userip[$i]}" | grep -c "$kw")
+				kw_exist_desc=$(echo "${site_desc[$i]}" | grep -c "$kw")
+
+				if [ "$kw_exist_userip" != "0" ] || [ "$kw_exist_desc" != 0 ]; then
+					display_entry $color $i
+					color=$((color+1))
+
+					if [ $color -eq 38 ]; then
+						color=32
+					fi
+
+					break
+				fi
+			done
+		done
+	fi
 
 	print_head_tail "tail"
 	echo -e
@@ -483,16 +507,22 @@ function display_usage()
 	color_msg 38 "   - " -n
 	color_msg 32 "num" -n
 	color_msg 38 ": cn #num " -n
-	color_msg 33 "[x|f|v|r]"
+	color_msg 33 "[x|f|v|r] [:port]"
 	color_msg 38 "          ex. cn 2 (SSH to site 2)"
 	color_msg 38 "          ex. cn 2 x (with X-forwarding)"
 	color_msg 38 "          ex. cn 2 f (FTP to site 2)"
 	color_msg 38 "          ex. cn 2 r (RDP to site 2)"
+	color_msg 38 "          ex. cn 2 r :5010 (RDP to site 2 by port number 5010)"
 	color_msg 38 "          ex. cn 2 v (VNC to site 2)"
+	color_msg 38 "          ex. cn 2 v :5903 (VNC to site 2 by port number 5903)"
 
 	color_msg 38 "   - " -n
 	color_msg 32 "l" -n
-	color_msg 38 ": list all sites."
+	color_msg 38 ": cn l [keyword1] [keyword2] [...]."
+	color_msg 38 "        List all sites or list some sites which contain the given keywords."
+	color_msg 38 "        ex. cn l (List all sites)"
+	color_msg 38 "        ex. cn l \"CCMA\" \"10.209\" (List the sites contains keywords of CCMA or 10.209)"
+
 
 	display_reg_usage
 
@@ -1051,18 +1081,6 @@ function cmd_to()
 	done
 }
 
-# Search sites by keyword
-# Input: $1,2,...->keywords
-function search_site_by_keyword()
-{
-	if [ -z $1 ]; then
-		display_sh_usage
-		exit 0
-	fi
-
-
-}
-
 # main()
 if [ -z "$1" ]; then
 	display_usage
@@ -1072,7 +1090,8 @@ else
 	case "$1" in
 		[l] )
 			echo -e
-			display_sites
+			shift 1
+			display_sites $@
 			exit 0;;
 		[a] )
 			add_node "$2" "$3"
