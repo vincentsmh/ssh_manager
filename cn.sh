@@ -65,23 +65,25 @@ function read_sites()
 
 	while read site
 	do
+		IFS='_' read -a array <<< "$site"
+
 		if [ $read_max -ne 0 ]; then
-			local th=$(echo "$site" | awk -F "_" {'print $1'} | bc)
+			local th=$(echo ${array[0]} | bc)
 			site_num[$th]=$th
-			site_userip[$th]=$(echo "$site" | awk -F "_" {'print $2'})
-			site_desc[$th]=$(echo "$site" | awk -F "_" {'print $3'})
-			site_status[$th]=$(echo "$site" | awk -F "_" {'print $4'})
-			site_feq[$th]=$(echo "$site" | awk -F "_" {'print $5'} | bc)
+			site_userip[$th]=${array[1]}
+			site_desc[$th]=${array[2]}
+			site_status[$th]=${array[3]}
+			site_feq[$th]=${array[4]}
 
 			if [ "${site_num[$th]}" != "" ]; then
 				num_of_sites=$(($num_of_sites+1))
 			fi
 		else
-			max_num_len=$(echo "$site" | awk -F "_" {'print $1'} | bc)
-			max_userip_len=$(echo "$site" | awk -F "_" {'print $2'} | bc)
-			max_desc_len=$(echo "$site" | awk -F "_" {'print $3'} | bc)
-			max_status_len=$(echo "$site" | awk -F "_" {'print $4'} | bc)
-			max_feq_len=$(echo "$site" | awk -F "_" {'print $5'} | bc)
+			max_num_len=$( echo ${array[0]} | bc )
+			max_userip_len=$( echo ${array[1]} | bc )
+			max_desc_len=$( echo ${array[2]} | bc )
+			max_status_len=$( echo ${array[3]} | bc )
+			max_feq_len=$( echo ${array[4]} | bc )
 			read_max=1
 		fi
 	done < $DATA
