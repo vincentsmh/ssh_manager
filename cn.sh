@@ -309,7 +309,7 @@ function scp_from()
 # Input: $1->the file which will be copied, $2,3,...->site number
 function scp_to()
 {
-	if [ -z $1 ] || [ -z $2 ]; then
+	if [ -z "$1" ] || [ -z "$2" ]; then
 		display_scp_to
 		exit 0
 	fi
