@@ -1156,7 +1156,7 @@ else
 			exit 0;;
 		cmd )
 			shift 1
-			cmd_to $@
+			cmd_to "$@"
 			exit 0;;
 		sh )
 			shift 1
