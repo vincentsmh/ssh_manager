@@ -8,7 +8,7 @@ LAST_UPDATE="12.14.2013"
 # Input: $1->color, $2->message, $3->newline or not
 function color_msg
 {
-	echo -e $3 "\033[1;$1m$2\033[0m"
+	echo -e $3 "\033[$1m$2\033[0m"
 }
 
 function color_msg_len
@@ -113,6 +113,7 @@ function is_site_exist()
 }
 
 # Parse conn.data to retrieve node's IP according to the given node number
+# Input: $1->site number
 function find_ip()
 {
 	if [ "${site_num[$1]}" == "" ]; then
@@ -263,11 +264,21 @@ function display_sites()
 	echo -e
 }
 
+function display_ac_usg()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "ac" -n
+	color_msg 38 ": cn ac " -n
+	color_msg 33 "\"user@ip\" [\"desc\"]"
+	color_msg 38 "         Add a new site and connect to it."
+}
+
 function display_scp_to()
 {
 	color_msg 38 "   - " -n
 	color_msg 32 "ct" -n
-	color_msg 38 ": cn ct \"file\" #num1 [#num2] [#num3] [...]"
+	color_msg 38 ": cn ct " -n
+	color_msg 33 "\"file\" #num1 [#num2] [#num3] [...]"
 	color_msg 38 "         scp a file/directory to the given site. "
 	color_msg 38 "         ex: cn ct file 3"
 }
@@ -276,7 +287,8 @@ function display_scp_from()
 {
 	color_msg 38 "   - " -n
 	color_msg 32 "cf" -n
-	color_msg 38 ": cn cf \"file\" #num1 [#num2] [#num3] [...]"
+	color_msg 38 ": cn cf " -n
+	color_msg 33 "\"file\" #num1 [#num2] [#num3] [...]"
 	color_msg 38 "         scp a remote file/directory of the given sites to local"
 	color_msg 38 "         ex: cn cf file 3 (=> scp user@site3_ip:file .)"
 }
@@ -386,6 +398,19 @@ function reg_key()
 	color_msg 32 "Register public key to $ip successfully."
 }
 
+# Check if the give site is connectable.
+# Input: $1->site number
+function is_reachable()
+{
+	ping_site $1
+
+	if [ "${site_status[$1]}" == "On" ]; then
+		return 1
+	else
+		return 0
+	fi
+}
+
 function add_node_to_num()
 {
 	local field1_len=$(strlen "$1")
@@ -407,7 +432,6 @@ function add_node_to_num()
 	site_num[$1]="$1"
 	site_userip[$1]="$2"
 	site_desc[$1]="$3"
-	ping_site $1
 	site_feq[$1]=0
 
 	export_to_file
@@ -442,7 +466,9 @@ function add_node()
 		read -p "(y/n)" yn
 
 		case $yn in
-			[Yy]* ) add_node_to_num "$num" "$1" "$2";;
+			[Yy]* ) add_node_to_num "$num" "$1" "$2"
+					return $num
+					;;
 			[Nn]* ) read -p "Input your number:" un
 					add_node_to_num $un "$1" "$2";;
 			* ) echo "Please answer y or a number you want to add";;
@@ -457,11 +483,11 @@ function add_node()
 # Display author information
 function display_author()
 {
-	color_msg 38 "This utility is created by " -n
+	color_msg 38 "This utility is maintained by " -n
 	color_msg 36 "Vincent Shi-Ming Huang."
-	color_msg 38 "If you have any problem or you hit some issue/bug, please send your comment to " -n
+	color_msg 38 "If you have any problem or you hit some issue/bug, please send your comment to "
 	color_msg 36 "Vincent.SM.Huang@gmail.com"
-	color_msg 38 "http://vincent-smh.appspot.com"
+	color_msg 35 "http://vincent-smh.appspot.com"
 }
 
 # Display the usage of 'md' command
@@ -469,7 +495,9 @@ function display_md_usage()
 {
 	color_msg 38 "   - " -n
 	color_msg 32 "md" -n
-	color_msg 38 ": Modify a site's description."
+	color_msg 38 ": cn md " -n
+	color_msg 33 "#num \"desc\""
+	color_msg 38 "         Modify a site's description."
 	color_msg 38 "         ex: cn md 3 \"New description to site 3\""
 
 }
@@ -478,10 +506,11 @@ function display_reg_usage()
 {
 	color_msg 38 "   - " -n
 	color_msg 32 "r" -n
-	color_msg 38 ": cn r #num"
-	color_msg 38 "        Register public key to site #num. You would be asked to input password for"
-	color_msg 38 "        several times. After the registration, you can connect to that site without"
-	color_msg 38 "        type password."
+	color_msg 38 ": cn r " -n
+	color_msg 33 "#num"
+	color_msg 38 "        Register public key to site #num. You would be asked to input password "
+	color_msg 38 "        for several times. After the registration, you can connect to that "
+	color_msg 38 "        site without type password."
 	color_msg 38 "        ex: cn r 3"
 }
 
@@ -489,16 +518,23 @@ function display_deploy_usage()
 {
 	color_msg 38 "   - " -n
 	color_msg 32 "dp" -n
-	color_msg 38 ": cn dp #num [#num2] [#num3] ..."
-	color_msg 38 "       Deploy this utility to some sites."
+	color_msg 38 ": cn dp " -n
+	color_msg 33 "#num [#num2] [#num3] ..."
+	color_msg 38 "         Deploy this utility to site(s) of #num1 (#num2, #num3, ...)."
 }
 
 function display_cmd_usage()
 {
 	color_msg 38 "   - " -n
 	color_msg 32 "cmd" -n
-	color_msg 38 ": cn cmd \"commands\" #num [#num2] [#num3] ..."
-	color_msg 38 "          Send commands to some sites"
+	color_msg 38 ": cn cmd " -n
+	color_msg 33 "\"commands\" #num1 [#num2] [#num3] ..."
+	color_msg 38 "          Send commands to site(s) of #num1 (#num2, #num3, ...)."
+	color_msg 38 "          ex: cn cmd \"ls\" 2"
+	color_msg 38 "          ex: cn cmd \"cn 3\" 2 " -n
+	color_msg 34 "(Site 2 also installed this utility. You can "
+	color_msg 34 "              connect to site 3 through site 2. This is helpful if site 3 is "
+	color_msg 34 "              under firewall that only site 2 can connect to.)"
 }
 
 # Display the usage of 'cn' command
@@ -506,8 +542,12 @@ function display_usage()
 {
 	echo -e
 	color_msg 38 "Usage: cn " -n
-	color_msg 32 "<num|l|r|a|d|ct|cf|p|m|pa|rn|md|sf|doff|rst|dp|cmd>" -n
+	color_msg 32 "<commands>" -n
 	color_msg 33 " [args]"
+
+	color_msg 32 "<commands> " -n
+	color_msg 38 "are listed as follows:"
+
 	color_msg 38 "   - " -n
 	color_msg 32 "num" -n
 	color_msg 38 ": cn #num " -n
@@ -522,23 +562,31 @@ function display_usage()
 
 	color_msg 38 "   - " -n
 	color_msg 32 "l" -n
-	color_msg 38 ": cn l [keyword1] [keyword2] [...]."
+	color_msg 38 ": cn l " -n
+	color_msg 33 "[keyword1] [keyword2] [...]."
 	color_msg 38 "        List all sites or list some sites which contain the given keywords."
 	color_msg 38 "        ex. cn l (List all sites)"
-	color_msg 38 "        ex. cn l \"CCMA\" \"10.209\" (List the sites contains keywords of CCMA or 10.209)"
-
+	color_msg 38 "        ex. cn l \"CCMA\" \"10.209\"" -n
+	color_msg 34 "(List the sites contains keywords of CCMA or "
+	color_msg 34 "            10.209)"
 
 	display_reg_usage
 
 	color_msg 38 "   - " -n
 	color_msg 32 "a" -n
-	color_msg 38 ": Add a new site."
+	color_msg 38 ": cn a " -n
+	color_msg 33 "\"user@ip\" [\"desc\"]"
+	color_msg 38 "        Add a new site."
 	color_msg 38 "        ex: cn a user@127.0.0.1 \"Description of the site.\""
-	color_msg 38 "        ex: cn a \"-p 2222 user@127.0.0.1 \"Description of the site.\" (Assign a port)"
+	color_msg 38 "        ex: cn a \"-p 2222 user@127.0.0.1 \"Description of the site.\""
+
+	display_ac_usg
 
 	color_msg 38 "   - " -n
 	color_msg 32 "d" -n
-	color_msg 38 ": Delete a site (num). "
+	color_msg 38 ": cn d " -n
+	color_msg 33 "#num"
+	color_msg 38 "        Delete a site (num). "
 	color_msg 38 "        ex: cn d 3"
 
 	display_scp_to
@@ -546,12 +594,14 @@ function display_usage()
 
 	color_msg 38 "   - " -n
 	color_msg 32 "p" -n
-	color_msg 38 ": Ping a site to test the connectivity. "
+	color_msg 38 ": cn p " -n
+	color_msg 33 "#num"
+	color_msg 38 "        Ping a site to test the connectivity. "
 	color_msg 38 "        ex: cn p 3"
 
 	color_msg 38 "   - " -n
 	color_msg 32 "pa" -n
-	color_msg 38 ": Ping all sites to test their connectivity."
+	color_msg 38 ": cn pa. Ping all sites to test their connectivity."
 
 	display_md_usage
 
@@ -563,11 +613,13 @@ function display_usage()
 
 	color_msg 38 "   - " -n
 	color_msg 32 "doff" -n
-	color_msg 38 ": Delete sites whose status are Off"
+	color_msg 38 ": Delete all sites whose status are Off"
 
 	color_msg 38 "   - " -n
-	color_msg 32 "rst: cn rst [#num]" -n
-	color_msg 38 ": Reset sites' frequency to 0."
+	color_msg 32 "rst: " -n
+	color_msg 38 "cn rst " -n
+	color_msg 33 "[#num]"
+	color_msg 38 "          Reset sites' frequency to 0."
 
 	display_move_usage
 
@@ -577,8 +629,8 @@ function display_usage()
 
 	color_msg 38 "   - " -n
 	color_msg 32 "upgrade: " -n
-	color_msg 38 "Upgrade cn utility to the newest version."
-	color_msg 38 "              This will checkout the newest version from github and install it."
+	color_msg 38 "Upgrade cn utility to the newest version. This will checkout the "
+	color_msg 38 "              newest version from github and install it."
 
 	color_msg 38 "   - " -n
 	color_msg 32 "v: " -n
@@ -721,7 +773,9 @@ function display_move_usage()
 {
 	color_msg 38 "   - " -n
 	color_msg 32 "m" -n
-	color_msg 38 ": Move a site #num1 to #num2"
+	color_msg 38 ": cn m " -n
+	color_msg 33 "#num1 #num2"
+	color_msg 38 "        Move site #num1 to #num2"
 	color_msg 38 "        ex: cn m 10 3"
 }
 
@@ -806,7 +860,7 @@ function ping_site()
 {
 	local ip=$(find_ip $1)
 
-	ping -c 1 -W 1500 $ip
+	ping -c 1 -W 1500 $ip >> /dev/null
 
 	if [ $? -eq 0 ]; then
 		site_status[$1]="On"
@@ -823,9 +877,12 @@ function ping_all_sites()
 {
 	local ip=""
 
+	color_msg 32 "Ping all sites ..."
+	echo -e
+
 	for i in ${!site_num[*]}; do
 		ip=$(find_ip $i)
-		ping -c 1 -W 1500 $ip
+		ping -c 1 -W 1500 $ip >> /dev/null
 
 		if [ $? -eq 0 ]; then
 			site_status[$i]="On"
@@ -1010,14 +1067,33 @@ function is_osx()
 }
 
 # Connect to the given site by the given protocol(command)
-# Input: $1->utility name, $2->IP, $3->Port, $4->options
+# Input: $1->utility name, $2->site number, $3->Port|x, $4->options
 function connect_by()
 {
+	is_reachable $2
+
+	if [ $? == 0 ]; then
+		color_msg 31 "Site [$2] is not reachable."
+		return 1
+	fi
+
+	if [ "$1" == "ssh" ]; then
+		if [ "$3" == "x" ]; then
+			color_msg 32 "SSH to ${site_userip[$2]} with X-Forwarding"
+			ssh -X ${site_userip[$2]}
+		else
+			color_msg 32 "SSH to ${site_userip[$2]}"
+			ssh "${site_userip[$2]}"
+		fi
+	fi
+
+	local ip=$(find_ip $2)
+
 	if [ "$(is_osx)" == "1" ]; then
 		case "$1" in
-			ftp ) open ftp://$2$3 ;;
-			vncviewer ) open vnc://$2$3 ;;
-			rdesktop ) open rdp://$2$3 ;;
+			ftp ) open ftp://$ip$3 ;;
+			vncviewer ) open vnc://$ip$3 ;;
+			rdesktop ) open rdp://$ip$3 ;;
 		esac
 	else
 		check=$(command -v "$1" | grep -c "$1")
@@ -1026,9 +1102,9 @@ function connect_by()
 			color_msg 32 "Connecting ($1) to $ip ..."
 			case "$1" in
 				ftp ) local port=$(echo $3 | awk -F ":" {'print $2'})
-					$1 $2 $port;;
-				vncviewer ) $1 $2:$3;;
-				rdesktop ) $1 $2$3 $4;;
+					$1 $ip $port;;
+				vncviewer ) $1 $ip:$3;;
+				rdesktop ) $1 $ip$3 $4;;
 			esac
 		else
 			color_msg 31 "Require utility: " -n
@@ -1223,6 +1299,15 @@ else
 		upgrade )
 			do_upgrade
 			exit 0;;
+		ac )
+			if [ -z $2 ]; then
+				display_ac_usg
+				exit 0
+			fi
+
+			add_node "$2" "$3"
+			connect_by "ssh" $?
+			exit 0;;
 	esac
 
 	is_site_exist $1
@@ -1233,25 +1318,21 @@ else
 		increase_feq $1
 
 		if [ -z "$2" ]; then
-			color_msg 32 "SSH to ${site_userip[$1]}"
-			ssh ${site_userip[$1]}
-			exit 0
+			connect_by "ssh" $1
+			exit $?
 		else
-			ip=$(find_ip $1)
-
 			case "$2" in
 			[f] )
-				connect_by "ftp" "$ip" "$3" "$4"
+				connect_by "ftp" $1 "$3" "$4"
 				;;
 			[v] )
-				connect_by "vncviewer" "$ip" "$3" "$4"
+				connect_by "vncviewer" $1 "$3" "$4"
 				;;
 			[r] )
-				connect_by "rdesktop" "$ip" "$3" "$4"
+				connect_by "rdesktop" $1 "$3" "$4"
 				;;
 			[x] )
-				color_msg 32 "SSH to ${site_userip[$1]} with X-Forwarding"
-				ssh -X ${site_userip[$1]}
+				connect_by "ssh" $1 "x"
 				;;
 			[*] )
 				color_msg 32 "Unrecognized argument: $2."
