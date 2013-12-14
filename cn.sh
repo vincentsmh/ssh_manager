@@ -854,13 +854,25 @@ function uninstall()
 	rm -rf $DATA
 }
 
+# Find the wait time for ping
+# In OS X, waiting time is in millisecond, but in Linux it is second.
+function find_ping_wait_time()
+{
+	if [ "$(is_osx)" == "1" ]; then
+		echo "1500"
+	else
+		echo "1"
+	fi
+}
+
 # Ping the given site to test if the it is reachable.
 # Input: $1->the number of site
 function ping_site()
 {
 	local ip=$(find_ip $1)
+	local wt=$(find_ping_wait_time)
 
-	ping -c 1 -W 1500 $ip >> /dev/null
+	ping -c 1 -W $wt $ip >> /dev/null
 
 	if [ $? -eq 0 ]; then
 		site_status[$1]="On"
@@ -876,13 +888,14 @@ function ping_site()
 function ping_all_sites()
 {
 	local ip=""
+	local wt=$(find_ping_wait_time)
 
 	color_msg 32 "Ping all sites ..."
 	echo -e
 
 	for i in ${!site_num[*]}; do
 		ip=$(find_ip $i)
-		ping -c 1 -W 1500 $ip >> /dev/null
+		ping -c 1 -W $wt $ip >> /dev/null
 
 		if [ $? -eq 0 ]; then
 			site_status[$i]="On"
