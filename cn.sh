@@ -1,8 +1,8 @@
 #/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.0.0"
-LAST_UPDATE="12.14.2013"
+VERSION="1.0.1"
+LAST_UPDATE="20131214_1825"
 
 # Color function
 # Input: $1->color, $2->message, $3->newline or not
@@ -11,7 +11,7 @@ function color_msg
 	echo -e $3 "\033[$1m$2\033[0m"
 }
 
-function color_msg_len
+function color_msg_len()
 {
 	echo -ne "\033[1;$1m"
 	printf %-$3s "$2"
@@ -1186,16 +1186,10 @@ function cmd_to()
 # Upgrade this utility to the newest version
 function do_upgrade()
 {
-	# Check the user
-	local user=$(whoami)
-
-	if [ "$user" != "root" ]; then
-		color_msg 31 "Please do upgrade with root permission."
-		return 0
-	fi
+	show_version
 
 	# Check git client tool
-	git_cmd=$(command -v git)
+	local git_cmd=$(command -v git)
 
 	if [ "$git_cmd" == "" ]; then
 		color_msg 31 "Please make sure you have git client tool."
@@ -1203,18 +1197,20 @@ function do_upgrade()
 	fi
 
 	# Checkout
-	CHECKOUT_FOLDER=".cn_upgrade"
+	local CHECKOUT_FOLDER=".cn_upgrade"
 	mkdir -p $CHECKOUT_FOLDER
 	cd $CHECKOUT_FOLDER
-	$git_cmd clone https://github.com/vincentsmh/ssh_script
+	$git_cmd clone https://github.com/vincentsmh/ssh_script >> /dev/null
 
 	# Upgrade
 	cd ssh_script
-	bash setup.sh
+	sudo bash setup.sh
 
 	# Clean up
 	cd ../..
 	rm -rf $CHECKOUT_FOLDER
+	echo -e
+	color_msg 38 "Use 'cn v' to check version upgrade."
 }
 
 # Show current version
