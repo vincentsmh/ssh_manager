@@ -1,6 +1,8 @@
 #/bin/bash
 
 DATA="$HOME/conn.data"
+VERSION="1.0.0"
+LAST_UPDATE="12.14.2013"
 
 # Color function
 # Input: $1->color, $2->message, $3->newline or not
@@ -578,6 +580,10 @@ function display_usage()
 	color_msg 38 "Upgrade cn utility to the newest version."
 	color_msg 38 "              This will checkout the newest version from github and install it."
 
+	color_msg 38 "   - " -n
+	color_msg 32 "v: " -n
+	color_msg 38 "Show version infomation."
+
 	echo -e
 	display_author
 	echo -e
@@ -1122,6 +1128,16 @@ function do_upgrade()
 	rm -rf $CHECKOUT_FOLDER
 }
 
+# Show current version
+function show_version()
+{
+	echo -e
+	color_msg 38 "Current version: " -n
+	color_msg 33 "$VERSION" -n
+	color_msg 32 " ($LAST_UPDATE)"
+	echo -e
+}
+
 # main()
 if [ -z "$1" ]; then
 	display_usage
@@ -1153,6 +1169,9 @@ else
 		[p] )
 			ping_site $2
 			display_sites
+			exit 0;;
+		[v] )
+			show_version
 			exit 0;;
 		ct )
 			shift 1
