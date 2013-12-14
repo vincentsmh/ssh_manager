@@ -573,6 +573,11 @@ function display_usage()
 
 	display_cmd_usage
 
+	color_msg 38 "   - " -n
+	color_msg 32 "upgrade: " -n
+	color_msg 38 "Upgrade cn utility to the newest version."
+	color_msg 38 "              This will checkout the newest version from github and install it."
+
 	echo -e
 	display_author
 	echo -e
@@ -999,7 +1004,7 @@ function is_osx()
 }
 
 # Connect to the given site by the given protocol(command)
-# Input: $1->utility name, $2->IP, $3->Port
+# Input: $1->utility name, $2->IP, $3->Port, $4->options
 function connect_by()
 {
 	if [ "$(is_osx)" == "1" ]; then
@@ -1017,7 +1022,7 @@ function connect_by()
 				ftp ) local port=$(echo $3 | awk -F ":" {'print $2'})
 					$1 $2 $port;;
 				vncviewer ) $1 $2:$3;;
-				rdesktop ) $1 $2$3;;
+				rdesktop ) $1 $2$3 $4;;
 			esac
 		else
 			color_msg 31 "Require utility: " -n
@@ -1081,6 +1086,40 @@ function cmd_to()
 		color_msg 33 "$ip"
 		ssh -t ${site_userip[$i]} "$cmd"
 	done
+}
+
+# Upgrade this utility to the newest version
+function do_upgrade()
+{
+	# Check the user
+	local user=$(whoami)
+
+	if [ "$user" != "root" ]; then
+		color_msg 31 "Please do upgrade with root permission."
+		return 0
+	fi
+
+	# Check git client tool
+	git_cmd=$(command -v git)
+
+	if [ "$git_cmd" == "" ]; then
+		color_msg 31 "Please make sure you have git client tool."
+		return 0
+	fi
+
+	# Checkout
+	CHECKOUT_FOLDER=".cn_upgrade"
+	mkdir -p $CHECKOUT_FOLDER
+	cd $CHECKOUT_FOLDER
+	$git_cmd clone https://github.com/vincentsmh/ssh_script
+
+	# Upgrade
+	cd ssh_script
+	bash setup.sh
+
+	# Clean up
+	cd ../..
+	rm -rf $CHECKOUT_FOLDER
 }
 
 # main()
@@ -1162,6 +1201,9 @@ else
 			shift 1
 			search_site_by_keyword $@
 			exit 0;;
+		upgrade )
+			do_upgrade
+			exit 0;;
 	esac
 
 	is_site_exist $1
@@ -1180,13 +1222,13 @@ else
 
 			case "$2" in
 			[f] )
-				connect_by "ftp" "$ip" "$3"
+				connect_by "ftp" "$ip" "$3" "$4"
 				;;
 			[v] )
-				connect_by "vncviewer" "$ip" "$3"
+				connect_by "vncviewer" "$ip" "$3" "$4"
 				;;
 			[r] )
-				connect_by "rdesktop" "$ip" "$3"
+				connect_by "rdesktop" "$ip" "$3" "$4"
 				;;
 			[x] )
 				color_msg 32 "SSH to ${site_userip[$1]} with X-Forwarding"
