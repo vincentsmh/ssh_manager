@@ -1096,7 +1096,7 @@ function connect_by()
 			ssh -X ${site_userip[$2]}
 		else
 			color_msg 32 "SSH to ${site_userip[$2]}"
-			ssh "${site_userip[$2]}"
+			ssh ${site_userip[$2]}
 		fi
 	fi
 
