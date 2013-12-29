@@ -1,8 +1,8 @@
 #/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.1.0"
-LAST_UPDATE="20131229_1501"
+VERSION="1.1.1"
+LAST_UPDATE="20131229_1559"
 
 # Color function
 # Input: $1->color, $2->message, $3->newline or not
@@ -706,6 +706,10 @@ function display_usage()
 	color_msg 38 "              newest version from github and install it."
 
 	color_msg 38 "   - " -n
+	color_msg 32 "uninstall: " -n
+	color_msg 38 "Uninstall this utility."
+
+	color_msg 38 "   - " -n
 	color_msg 32 "v: " -n
 	color_msg 38 "Show version infomation."
 
@@ -936,8 +940,8 @@ function uninstall()
 		local DEPLOY_FOLDER="/usr/bin"
 	fi
 
-	rm -rf $DEPLOY_FOLDER/cn
-	rm -rf $DATA
+	sudo rm -rf $DEPLOY_FOLDER/cn
+	sudo rm -rf $DATA
 }
 
 # Find the wait time for ping
