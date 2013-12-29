@@ -1,8 +1,8 @@
 #/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.0.1"
-LAST_UPDATE="20131214_1825"
+VERSION="1.1.0"
+LAST_UPDATE="20131229_1501"
 
 # Color function
 # Input: $1->color, $2->message, $3->newline or not
@@ -50,6 +50,7 @@ function unset_site()
 	unset site_desc
 	unset site_status
 	unset site_feq
+	unset site_tag
 }
 
 # Read all sites data into 'sites'
@@ -63,10 +64,13 @@ function read_sites()
 	max_desc_len=11
 	max_status_len=6
 	max_feq_len=9
+	max_tag_len=3
+	total_len=0
 	unset_site
 
 	while read site
 	do
+		unset array
 		IFS='_' read -a array <<< "$site"
 
 		if [ $read_max -ne 0 ]; then
@@ -76,27 +80,34 @@ function read_sites()
 			site_desc[$th]=${array[2]}
 			site_status[$th]=${array[3]}
 			site_feq[$th]=${array[4]}
+			site_tag[$th]=${array[5]}
 
 			if [ "${site_num[$th]}" != "" ]; then
 				num_of_sites=$(($num_of_sites+1))
 			fi
 		else
+			# Read max length for each column at the first loop
 			max_num_len=$( echo ${array[0]} | bc )
 			max_userip_len=$( echo ${array[1]} | bc )
 			max_desc_len=$( echo ${array[2]} | bc )
 			max_status_len=$( echo ${array[3]} | bc )
 			max_feq_len=$( echo ${array[4]} | bc )
+
+			if [ "${array[5]}" != "" ]; then
+				max_tag_len=$( echo ${array[5]} | bc )
+			fi
 			read_max=1
+			total_len=$(( $max_num_len + $max_userip_len + $max_desc_len + $max_status_len + $max_feq_len + $max_tag_len + 10 ))
 		fi
 	done < $DATA
 }
 
 function export_to_file()
 {
-	echo "$max_num_len"_"$max_userip_len"_"$max_desc_len"_"$max_status_len"_"$max_feq_len" > $DATA
+	echo "$max_num_len"_"$max_userip_len"_"$max_desc_len"_"$max_status_len"_"$max_feq_len"_"$max_tag_len" > $DATA
 
 	for i in ${!site_num[*]}; do
-		echo "${site_num[$i]}"_"${site_userip[$i]}"_"${site_desc[$i]}"_"${site_status[$i]}"_"${site_feq[$i]}"
+		echo "${site_num[$i]}"_"${site_userip[$i]}"_"${site_desc[$i]}"_"${site_status[$i]}"_"${site_feq[$i]}"_"${site_tag[$i]}"
 	done >> $DATA
 }
 
@@ -170,15 +181,50 @@ function print_dash()
 		echo -n "-"
 	done
 
+	echo -n "+"
+
+	for ((i=0;i<=$(($max_tag_len+1));i++))
+	do
+		echo -n "-"
+	done
+
 	echo "+"
+}
+
+function print_tag_dash()
+{
+	echo -n "+"
+
+	for ((i=0;i<=$(($total_len+6));i++))
+	do
+		echo -n "-"
+	done
+
+	echo "+"
+}
+
+# Print tagle's head when listing by Tag
+# Input: $1->Tag name
+function print_tag_head()
+{
+	if [ "$1" == "" ]; then
+		local tag="no_tag"
+	else
+		local tag="$1"
+	fi
+
+	print_tag_dash
+
+	color_msg 37 "| Tag: " -n
+	color_msg_len "1;32" "$tag" $total_len -n
+	color_msg 37 " |"
+
+	print_dash
 }
 
 # Print table's head and tail
 # Input:
 #   $1->option: head/tail
-#   $1->max_id_len
-#   $2->max_userip_len
-#   $3->max_desc_len
 function print_head_tail()
 {
 	print_dash
@@ -194,9 +240,11 @@ function print_head_tail()
 		color_msg_len 37 "Status" $max_status_len -n
 		color_msg 37 " | " -n
 		color_msg_len 37 "Frequency" $max_feq_len -n
+		color_msg 37 " | " -n
+		color_msg_len 37 "Tag" $max_tag_len -n
 		color_msg 37 " |"
 
-		print_dash $2 $3 $4
+		print_dash
 	fi
 
 }
@@ -215,6 +263,8 @@ function display_entry()
 		color_msg_len $1 "${site_status[$2]}" $max_status_len -n
 		color_msg 37 " | " -n
 		color_msg_len $1 "${site_feq[$2]}" $max_feq_len -n
+		color_msg 37 " | " -n
+		color_msg_len $1 "${site_tag[$2]}" $max_tag_len -n
 		color_msg 37 " |"
 }
 
@@ -238,6 +288,7 @@ function display_sites()
 			fi
 		done
 	else
+		# Display only the sites which contain the given keyword.
 		local kw_exist_userip=0
 		local kw_exist_desc=0
 
@@ -537,6 +588,16 @@ function display_cmd_usage()
 	color_msg 34 "              under firewall that only site 2 can connect to.)"
 }
 
+function display_usg_tag()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "t" -n
+	color_msg 38 ": cn t \"TAG_str\" " -n
+	color_msg 33 "#num1 [#num2] [#num3] [...]"
+	color_msg 38 "        Assign TAG to site(s) #num1, #num2 ... "
+	color_msg 38 "        ex: cn t \"TAG\" 3 5 6 8"
+}
+
 # Display the usage of 'cn' command
 function display_usage()
 {
@@ -570,6 +631,15 @@ function display_usage()
 	color_msg 34 "(List the sites contains keywords of CCMA or "
 	color_msg 34 "            10.209)"
 
+	color_msg 38 "   - " -n
+	color_msg 32 "lt" -n
+	color_msg 38 ": cn lt " -n
+	color_msg 33 "[tag]"
+	color_msg 38 "         List all sites and group them by tag."
+	color_msg 38 "         ex. cn lt"
+	color_msg 38 "         ex. cn lt TAG " -n
+	color_msg 34 "(list only sites which are tagged as TAG.)"
+
 	display_reg_usage
 
 	color_msg 38 "   - " -n
@@ -598,6 +668,9 @@ function display_usage()
 	color_msg 33 "#num"
 	color_msg 38 "        Ping a site to test the connectivity. "
 	color_msg 38 "        ex: cn p 3"
+
+	display_usg_tag
+
 
 	color_msg 38 "   - " -n
 	color_msg 32 "pa" -n
@@ -642,9 +715,10 @@ function display_usage()
 }
 
 # Find maximum string length.
-# Input: $1->find the maximum number string length
-#        $2->find the maximum userip string length
-#        $3->find maximum description string length
+# Input: $1->1 to find the maximum number string length
+#        $2->1 to find the maximum userip string length
+#        $3->1 to find maximum description string length
+#        $4->1 to find maximum tag string length
 function find_max_len()
 {
 	local len=0
@@ -681,6 +755,18 @@ function find_max_len()
 
 			if [ $len -gt $max_desc_len ]; then
 				max_desc_len=$len
+			fi
+		done
+	fi
+
+	if [ $4 -eq 1 ]; then
+		max_tag_len=0
+
+		for i in ${!site_tag[*]}; do
+			len=$(strlen "${site_tag[$i]}")
+
+			if [ $len -gt $max_tag_len ]; then
+				max_tag_len=$len
 			fi
 		done
 	fi
@@ -1223,6 +1309,101 @@ function show_version()
 	echo -e
 }
 
+# Tag sites
+# Input: $1->tag $2,$3,$4,...->Sites
+function tag_site()
+{
+	if [ -z $1 ]; then
+		display_usg_tag
+	fi
+
+	local tag="$1"
+	local tag_len=$(strlen "$1")
+
+	shift 1
+
+	for i in $@; do
+		site_tag[$i]="$tag"
+	done
+
+	find_max_len 0 0 0 1
+
+	if [ $max_tag_len -lt 3 ]; then
+		max_tag_len=3
+	fi
+
+	export_to_file
+}
+
+# Find all tags from all sites
+# Ouput a global array: tags
+function find_tags()
+{
+	local tag_i=0
+	local j=0
+
+	for i in ${!site_tag[*]}; do
+		# Check if the tag is existed
+		local tag_exit=0
+
+		for (( j=0; j<$tag_i; j++ )); do
+			if [ "${site_tag[$i]}" == "${tags[$j]}" ]; then
+				tag_exit=1
+				break
+			fi
+		done
+
+		# Find new tag
+		if [ $tag_exit -eq 0 ]; then
+			tags[$tag_i]="${site_tag[$i]}"
+			tag_i=$(($tag_i + 1))
+		fi
+	done
+
+	return 0
+}
+
+function list_sites_of_tag()
+{
+	local color=32
+	local tag="$1"
+	print_tag_head "$tag"
+
+	for i in ${!site_num[*]}; do
+		if [ "${site_tag[$i]}" == "$tag" ]; then
+			display_entry $color $i
+			color=$((color+1))
+
+			if [ $color -eq 38 ]; then
+				color=32
+			fi
+		fi
+	done
+
+	print_head_tail "tail"
+	echo -e
+}
+
+# List all sites and group them by Tag.
+# Input: $1->[Tag]
+function list_by_tag()
+{
+	# List all sites from all tags
+	if [ -z $1 ]; then
+		unset tags
+		find_tags
+
+		for tag_i in ${!tags[*]}; do
+			list_sites_of_tag "${tags[$tag_i]}"
+		done
+
+		unset tags
+	else
+		list_sites_of_tag "$1"
+	fi
+
+}
+
 # main()
 if [ -z "$1" ]; then
 	display_usage
@@ -1257,6 +1438,14 @@ else
 			exit 0;;
 		[v] )
 			show_version
+			exit 0;;
+		[t] )
+			shift 1
+			tag_site "$@"
+			exit 0;;
+		lt )
+			shift 1
+			list_by_tag "$@"
 			exit 0;;
 		ct )
 			shift 1
