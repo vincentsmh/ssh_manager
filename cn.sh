@@ -2,7 +2,7 @@
 
 DATA="$HOME/conn.data"
 VERSION="1.1.1"
-LAST_UPDATE="20131229_1559"
+LAST_UPDATE="20140102_2257"
 
 # Color function
 # Input: $1->color, $2->message, $3->newline or not
@@ -484,6 +484,7 @@ function add_node_to_num()
 	site_userip[$1]="$2"
 	site_desc[$1]="$3"
 	site_feq[$1]=0
+	site_tag[$1]=""
 
 	export_to_file
 }
@@ -706,10 +707,6 @@ function display_usage()
 	color_msg 38 "              newest version from github and install it."
 
 	color_msg 38 "   - " -n
-	color_msg 32 "uninstall: " -n
-	color_msg 38 "Uninstall this utility."
-
-	color_msg 38 "   - " -n
 	color_msg 32 "v: " -n
 	color_msg 38 "Show version infomation."
 
@@ -806,20 +803,15 @@ function del_site()
 			desc_check=1
 		fi
 
+		if [ $(strlen "${site_tag[$num]}") -eq $max_tag_len ]; then
+			tag_check=1
+		fi
+
 		unset_entry $num
 	done
 
-	find_max_len $num_check $userip_check $desc_check
+	find_max_len $num_check $userip_check $desc_check $tag_check
 	export_to_file
-}
-
-function assign_tmp_entry()
-{
-	tmp_site_num[$1]="$2"
-	tmp_site_userip[$1]="$3"
-	tmp_site_desc[$1]="$4"
-	tmp_site_status[$1]="$5"
-	tmp_site_feq[$1]="$6"
 }
 
 function unset_tmp_site()
@@ -829,10 +821,31 @@ function unset_tmp_site()
 	unset tmp_site_desc
 	unset tmp_site_status
 	unset tmp_site_feq
+	unset tmp_site_tag
 }
 
-function clone_tmp_to_site()
+function assign_tmp_entry()
 {
+	tmp_site_num[$1]="$2"
+	tmp_site_userip[$1]="$3"
+	tmp_site_desc[$1]="$4"
+	tmp_site_status[$1]="$5"
+	tmp_site_feq[$1]="$6"
+	tmp_site_tag[$1]="$7"
+}
+
+function renumber_sites()
+{
+	local j=1
+
+	# Save reordered site to tmp_site
+	for i in ${!site_num[*]}; do
+		assign_tmp_entry $j "$j" "${site_userip[$i]}" "${site_desc[$i]}" "${site_status[$i]}" "${site_feq[$i]}" "${site_tag[$i]}"
+		j=$(($j+1))
+	done
+
+	unset_site
+
 	j=1
 	for i in ${!tmp_site_num[*]}; do
 		site_num[$j]="${tmp_site_num[$i]}"
@@ -840,21 +853,10 @@ function clone_tmp_to_site()
 		site_desc[$j]="${tmp_site_desc[$i]}"
 		site_status[$j]="${tmp_site_status[$i]}"
 		site_feq[$j]="${tmp_site_feq[$i]}"
-		j=$(($j+1))
-	done
-}
-
-function renumber_sites()
-{
-	j=1
-
-	for i in ${!site_num[*]}; do
-		assign_tmp_entry $j "$j" "${site_userip[$i]}" "${site_desc[$i]}" "${site_status[$i]}" "${site_feq[$i]}"
+		site_tag[$j]="${tmp_site_tag[$i]}"
 		j=$(($j+1))
 	done
 
-	unset_site
-	clone_tmp_to_site
 	unset_tmp_site
 	export_to_file
 }
@@ -876,6 +878,7 @@ function assign_entry_data()
 	site_desc[$1]="$4"
 	site_status[$1]="$5"
 	site_feq[$1]="$6"
+	site_tag[$1]="$7"
 }
 
 function unset_entry()
@@ -885,6 +888,7 @@ function unset_entry()
 	unset site_desc[$1]
 	unset site_status[$1]
 	unset site_feq[$1]
+	unset site_tag[$1]
 }
 
 # Recursively move $1 to $2
@@ -902,7 +906,7 @@ function move_function()
 	# This will occurs when $1 > $2, we let $3 = $1 and this check is to limit
 	# the recursive routine stops at most on the position of $1.
 	if [ $2 -eq $3 ]; then
-		assign_entry_data $2 "$2" "${site_userip[$1]}" "${site_desc[$1]}" "${site_status[$1]}" "${site_feq[$1]}"
+		assign_entry_data $2 "$2" "${site_userip[$1]}" "${site_desc[$1]}" "${site_status[$1]}" "${site_feq[$1]}" "${site_tag[$1]}"
 		return 0
 	fi
 
@@ -913,6 +917,7 @@ function move_function()
 	local desc="${site_desc[$1]}"
 	local status="${site_status[$1]}"
 	local feq="${site_feq[$1]}"
+	local tag="${site_tag[$1]}"
 
 	# Check if the dest site number is existed.
 	if [ "${site_num[$2]}" != "" ]; then
@@ -921,7 +926,7 @@ function move_function()
 
 	# We have make sure the dest is empty or is moved to its next. So, we can
 	# assign value to it (move over).
-	assign_entry_data $2 "$num" "$userip" "$desc" "$status" "$feq"
+	assign_entry_data $2 "$num" "$userip" "$desc" "$status" "$feq" "$tag"
 
 	# When $2 > $1, after we move $1 to its next, we have to unset its original
 	# position
@@ -1089,12 +1094,12 @@ function sort_by_feq()
 			found_i=$(find_mim_feq)
 		fi
 
-		assign_tmp_entry $i "$i" "${site_userip[$found_i]}" "${site_desc[$found_i]}" "${site_status[$found_i]}" "${site_feq[$found_i]}"
+		assign_tmp_entry $i "$i" "${site_userip[$found_i]}" "${site_desc[$found_i]}" "${site_status[$found_i]}" "${site_feq[$found_i]}" "${site_tag[$found_i]}"
 		unset_entry $found_i
 	done
 
 	for i in ${!tmp_site_num[*]}; do
-		assign_entry_data $i "${tmp_site_num[$i]}" "${tmp_site_userip[$i]}" "${tmp_site_desc[$i]}" "${tmp_site_status[$i]}" "${tmp_site_feq[$i]}"
+		assign_entry_data $i "${tmp_site_num[$i]}" "${tmp_site_userip[$i]}" "${tmp_site_desc[$i]}" "${tmp_site_status[$i]}" "${tmp_site_feq[$i]}" "${tmp_site_tag[$i]}"
 	done
 
 	unset_tmp_site
