@@ -663,6 +663,11 @@ function display_usage()
 	color_msg 38 "        ex. cn l \"CCMA\" \"10.209\"" -n
 	color_msg 34 "(List the sites contains keywords of CCMA or "
 	color_msg 34 "            10.209)"
+	
+	color_msg 38 "   - " -n
+	color_msg 32 "lb" -n
+	color_msg 38 ": cn lb"
+	color_msg 38 "         List all sites briefly (only site number and user@IP)."
 
 	color_msg 38 "   - " -n
 	color_msg 32 "lt" -n
