@@ -1,8 +1,8 @@
 #/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.1.1"
-LAST_UPDATE="20140102_2257"
+VERSION="1.2.0"
+LAST_UPDATE="20140102_2331"
 
 # Color function
 # Input: $1->color, $2->message, $3->newline or not
@@ -148,6 +148,7 @@ function find_user()
 	echo $user
 }
 
+# Input: $1->brief mode
 function print_dash()
 {
 	echo -n "+"
@@ -161,32 +162,35 @@ function print_dash()
 	do
 		echo -n "-"
 	done
-	echo -n "+"
 
-	for ((i=0;i<=$(($max_desc_len+1));i++))
-	do
-		echo -n "-"
-	done
-	echo -n "+"
+	if [ -z $1 ]; then
+		echo -n "+"
 
-	for ((i=0;i<=$(($max_status_len+1));i++))
-	do
-		echo -n "-"
-	done
+		for ((i=0;i<=$(($max_desc_len+1));i++))
+		do
+			echo -n "-"
+		done
+		echo -n "+"
 
-	echo -n "+"
+		for ((i=0;i<=$(($max_status_len+1));i++))
+		do
+			echo -n "-"
+		done
 
-	for ((i=0;i<=$(($max_feq_len+1));i++))
-	do
-		echo -n "-"
-	done
+		echo -n "+"
 
-	echo -n "+"
+		for ((i=0;i<=$(($max_feq_len+1));i++))
+		do
+			echo -n "-"
+		done
 
-	for ((i=0;i<=$(($max_tag_len+1));i++))
-	do
-		echo -n "-"
-	done
+		echo -n "+"
+
+		for ((i=0;i<=$(($max_tag_len+1));i++))
+		do
+			echo -n "-"
+		done
+	fi
 
 	echo "+"
 }
@@ -225,49 +229,77 @@ function print_tag_head()
 # Print table's head and tail
 # Input:
 #   $1->option: head/tail
+#   $2->brief
 function print_head_tail()
 {
-	print_dash
+	print_dash "$2"
 
 	if [ "$1" == "head" ];then
 		color_msg 37 "| " -n
 		color_msg_len 37 "NO" $max_num_len -n
 		color_msg 37 " | " -n
 		color_msg_len 37 "user@IP" $max_userip_len -n
-		color_msg 37 " | " -n
-		color_msg_len 37 "Description" $max_desc_len -n
-		color_msg 37 " | " -n
-		color_msg_len 37 "Status" $max_status_len -n
-		color_msg 37 " | " -n
-		color_msg_len 37 "Frequency" $max_feq_len -n
-		color_msg 37 " | " -n
-		color_msg_len 37 "Tag" $max_tag_len -n
-		color_msg 37 " |"
 
-		print_dash
+		if [ -z $2 ]; then
+			color_msg 37 " | " -n
+			color_msg_len 37 "Description" $max_desc_len -n
+			color_msg 37 " | " -n
+			color_msg_len 37 "Status" $max_status_len -n
+			color_msg 37 " | " -n
+			color_msg_len 37 "Frequency" $max_feq_len -n
+			color_msg 37 " | " -n
+			color_msg_len 37 "Tag" $max_tag_len -n
+		fi
+		
+		color_msg 37 " |"
+		print_dash "$2"
 	fi
 
 }
 
 # Display the given site
-# Input: $1-> color, $2->site number
+# Input: $1-> color, $2->site number, $3->brief mode
 function display_entry()
 {
 		color_msg 37 "| " -n
 		color_msg_len $1 "$2" $max_num_len -n
 		color_msg 37 " | " -n
 		color_msg_len $1 "${site_userip[$2]}" $max_userip_len -n
-		color_msg 37 " | " -n
-		color_msg_len $1 "${site_desc[$2]}" $max_desc_len -n
-		color_msg 37 " | " -n
-		color_msg_len $1 "${site_status[$2]}" $max_status_len -n
-		color_msg 37 " | " -n
-		color_msg_len $1 "${site_feq[$2]}" $max_feq_len -n
-		color_msg 37 " | " -n
-		color_msg_len $1 "${site_tag[$2]}" $max_tag_len -n
+
+		if [ -z $3 ]; then
+			color_msg 37 " | " -n
+			color_msg_len $1 "${site_desc[$2]}" $max_desc_len -n
+			color_msg 37 " | " -n
+			color_msg_len $1 "${site_status[$2]}" $max_status_len -n
+			color_msg 37 " | " -n
+			color_msg_len $1 "${site_feq[$2]}" $max_feq_len -n
+			color_msg 37 " | " -n
+			color_msg_len $1 "${site_tag[$2]}" $max_tag_len -n
+		fi
+
 		color_msg 37 " |"
 }
 
+# Display all of the remote sites briefly.
+# Input $1,$2,...->keywords
+function display_sites_brief()
+{
+	color=32
+
+	print_head_tail "head" "b"
+
+	for i in ${!site_num[*]}; do
+		display_entry $color $i "b"
+		color=$((color+1))
+
+		if [ $color -eq 38 ]; then
+			color=32
+		fi
+	done
+
+	print_head_tail "tail" "b"
+	echo -e
+}
 # Display all of the remote sites defined in conn.data
 # Input $1,$2,...->keywords
 function display_sites()
@@ -1451,6 +1483,10 @@ else
 		[t] )
 			shift 1
 			tag_site "$@"
+			exit 0;;
+		lb )
+			shift 1
+			display_sites_brief
 			exit 0;;
 		lt )
 			shift 1
