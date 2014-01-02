@@ -1,8 +1,8 @@
 #/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.2.0"
-LAST_UPDATE="20140102_2331"
+VERSION="1.2.1"
+LAST_UPDATE="20140102_2336"
 
 # Color function
 # Input: $1->color, $2->message, $3->newline or not
