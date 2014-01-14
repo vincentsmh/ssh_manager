@@ -1,8 +1,8 @@
 #/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.2.1"
-LAST_UPDATE="20140102_2336"
+VERSION="1.2.2"
+LAST_UPDATE="20140114_1502"
 
 # Color function
 # Input: $1->color, $2->message, $3->newline or not
@@ -959,6 +959,9 @@ function move_function()
 	# Check if the dest site number is existed.
 	if [ "${site_num[$2]}" != "" ]; then
 		move_function $2 $(($2+1)) $3
+	else
+		# Delete the original entry
+		unset_entry $1
 	fi
 
 	# We have make sure the dest is empty or is moved to its next. So, we can
