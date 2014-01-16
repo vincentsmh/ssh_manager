@@ -1,8 +1,8 @@
 #/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.2.2"
-LAST_UPDATE="20140114_1502"
+VERSION="1.2.3"
+LAST_UPDATE="20140116_1515"
 
 # Color function
 # Input: $1->color, $2->message, $3->newline or not
@@ -574,6 +574,18 @@ function display_author()
 	color_msg 35 "http://vincent-smh.appspot.com"
 }
 
+# Display the usage of 'mu' command
+function display_mu_usage()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "mu" -n
+	color_msg 38 ": cn mu " -n
+	color_msg 33 "#num \"user@ip\""
+	color_msg 38 "         Modify a site's user@ip"
+	color_msg 38 "         ex: cn md 3 \"vincent@127.0.0.1\""
+
+}
+
 # Display the usage of 'md' command
 function display_md_usage()
 {
@@ -713,6 +725,8 @@ function display_usage()
 	color_msg 38 "   - " -n
 	color_msg 32 "pa" -n
 	color_msg 38 ": cn pa. Ping all sites to test their connectivity."
+
+	display_mu_usage
 
 	display_md_usage
 
@@ -1052,13 +1066,27 @@ function increase_feq()
 	fi
 }
 
+# Modify a site's user@ip
+# Input: $1-> site number, $2->user@ip
+function modify_userip()
+{
+	if [ "${site_num[$1]}" != "" ] && [ "$2" != "" ]; then
+		site_userip[$1]="$2"
+		find_max_len 0 1 0 0
+		export_to_file
+	else
+		display_mu_usage
+		exit 0
+	fi
+}
+
 # Modify the site description of the given site
 # Input: $1-> site number, $2->description
 function modify_desc()
 {
 	if [ "${site_num[$1]}" != "" ] && [ "$2" != "" ]; then
 		site_desc[$1]="$2"
-		find_max_len 0 0 1
+		find_max_len 0 0 1 0
 		export_to_file
 	else
 		display_md_usage
@@ -1510,6 +1538,10 @@ else
 			exit 0;;
 		pa )
 			ping_all_sites
+			display_sites
+			exit 0;;
+		mu )
+			modify_userip $2 "$3"
 			display_sites
 			exit 0;;
 		md )
