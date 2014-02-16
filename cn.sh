@@ -1,8 +1,8 @@
 #/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.2.3"
-LAST_UPDATE="20140116_1515"
+VERSION="1.2.4"
+LAST_UPDATE="20140216_1022"
 
 # Color function
 # Input: $1->color, $2->message, $3->newline or not
@@ -657,14 +657,14 @@ function display_usage()
 	color_msg 38 "   - " -n
 	color_msg 32 "num" -n
 	color_msg 38 ": cn #num " -n
-	color_msg 33 "[x|f|v|r] [:port]"
+	color_msg 33 "[x|f|v|r] [port]"
 	color_msg 38 "          ex. cn 2 (SSH to site 2)"
 	color_msg 38 "          ex. cn 2 x (with X-forwarding)"
 	color_msg 38 "          ex. cn 2 f (FTP to site 2)"
 	color_msg 38 "          ex. cn 2 r (RDP to site 2)"
-	color_msg 38 "          ex. cn 2 r :5010 (RDP to site 2 by port number 5010)"
+	color_msg 38 "          ex. cn 2 r 5010 (RDP to site 2 by port number 5010)"
 	color_msg 38 "          ex. cn 2 v (VNC to site 2)"
-	color_msg 38 "          ex. cn 2 v :5903 (VNC to site 2 by port number 5903)"
+	color_msg 38 "          ex. cn 2 v 5903 (VNC to site 2 by port number 5903)"
 
 	color_msg 38 "   - " -n
 	color_msg 32 "l" -n
@@ -1242,6 +1242,25 @@ function is_osx()
 	echo "$check"
 }
 
+# Find the default port of a protocol
+# If there is a port number given, just return it. Otherwise, return a default
+# port number according to the given protocol.
+# Input:
+#   - $1: protocol
+#   - $2: port
+function df_port()
+{
+	if [ -z "$2" ]; then
+		case "$1" in
+			ftp ) echo 21 ;;
+			vncviewer ) echo 5900 ;;
+			rdesktop ) echo 3389 ;;
+		esac
+	else
+		echo $2
+	fi
+}
+
 # Connect to the given site by the given protocol(command)
 # Input: $1->utility name, $2->site number, $3->Port|x, $4->options
 function connect_by()
@@ -1253,7 +1272,9 @@ function connect_by()
 		return 1
 	fi
 
+	# SSH
 	if [ "$1" == "ssh" ]; then
+		# With X-Forwarding
 		if [ "$3" == "x" ]; then
 			color_msg 32 "SSH to ${site_userip[$2]} with X-Forwarding"
 			ssh -X ${site_userip[$2]}
@@ -1261,26 +1282,30 @@ function connect_by()
 			color_msg 32 "SSH to ${site_userip[$2]}"
 			ssh ${site_userip[$2]}
 		fi
+
+		return 0
 	fi
 
+	# Other connection protocol
 	local ip=$(find_ip $2)
+	local port=$(df_port "$1" "$3")
+
+	color_msg 32 "Connecting ($1) to $ip [$port]..."
 
 	if [ "$(is_osx)" == "1" ]; then
 		case "$1" in
-			ftp ) open ftp://$ip$3 ;;
-			vncviewer ) open vnc://$ip$3 ;;
-			rdesktop ) open rdp://$ip$3 ;;
+			ftp ) open ftp://$ip:$port ;;
+			vncviewer ) open vnc://$ip:$port ;;
+			rdesktop ) open rdp://$ip:$port ;;
 		esac
 	else
 		check=$(command -v "$1" | grep -c "$1")
 
 		if [ "$check" == "1" ]; then
-			color_msg 32 "Connecting ($1) to $ip ..."
 			case "$1" in
-				ftp ) local port=$(echo $3 | awk -F ":" {'print $2'})
-					$1 $ip $port;;
-				vncviewer ) $1 $ip:$3;;
-				rdesktop ) $1 $ip$3 $4;;
+				ftp ) $1 $ip $port $4 ;;
+				vncviewer ) $1 $ip:$port $4 ;;
+				rdesktop ) $1 $ip:$port $4 ;;
 			esac
 		else
 			color_msg 31 "Require utility: " -n
@@ -1606,20 +1631,15 @@ else
 		else
 			case "$2" in
 			[f] )
-				connect_by "ftp" $1 "$3" "$4"
-				;;
+				connect_by "ftp" $1 "$3" "$4" ;;
 			[v] )
-				connect_by "vncviewer" $1 "$3" "$4"
-				;;
+				connect_by "vncviewer" $1 "$3" "$4" ;;
 			[r] )
-				connect_by "rdesktop" $1 "$3" "$4"
-				;;
+				connect_by "rdesktop" $1 "$3" "$4" ;;
 			[x] )
-				connect_by "ssh" $1 "x"
-				;;
+				connect_by "ssh" $1 "x" ;;
 			[*] )
-				color_msg 32 "Unrecognized argument: $2."
-				;;
+				color_msg 32 "Unrecognized argument: $2." ;;
 			esac
 		fi
 	fi
