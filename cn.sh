@@ -1,8 +1,8 @@
 #/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.2.4"
-LAST_UPDATE="20140216_1022"
+VERSION="1.2.5"
+LAST_UPDATE="20140218_1152"
 
 # Color function
 # Input: $1->color, $2->message, $3->newline or not
@@ -715,9 +715,9 @@ function display_usage()
 	color_msg 38 "   - " -n
 	color_msg 32 "p" -n
 	color_msg 38 ": cn p " -n
-	color_msg 33 "#num"
-	color_msg 38 "        Ping a site to test the connectivity. "
-	color_msg 38 "        ex: cn p 3"
+	color_msg 33 "#num [#num2] [#num3]"
+	color_msg 38 "        Ping site(s) to test their connectivity. "
+	color_msg 38 "        ex: cn p 3 4 5"
 
 	display_usg_tag
 
@@ -1014,20 +1014,21 @@ function find_ping_wait_time()
 	fi
 }
 
-# Ping the given site to test if the it is reachable.
-# Input: $1->the number of site
+# Ping the given sites to test if the it is reachable.
 function ping_site()
 {
-	local ip=$(find_ip $1)
-	local wt=$(find_ping_wait_time)
+	for i in $@; do
+		local ip=$(find_ip $i)
+		local wt=$(find_ping_wait_time)
 
-	ping -c 1 -W $wt $ip >> /dev/null
+		ping -c 1 -W $wt $ip >> /dev/null
 
-	if [ $? -eq 0 ]; then
-		site_status[$1]="On"
-	else
-		site_status[$1]="Off"
-	fi
+		if [ $? -eq 0 ]; then
+			site_status[$i]="On"
+		else
+			site_status[$i]="Off"
+		fi
+	done
 
 	export_to_file
 	return 0
@@ -1535,7 +1536,8 @@ else
 			display_sites
 			exit 0;;
 		[p] )
-			ping_site $2
+			shift 1
+			ping_site $@
 			display_sites
 			exit 0;;
 		[v] )
