@@ -1,8 +1,8 @@
 #/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.2.5"
-LAST_UPDATE="20140218_1152"
+VERSION="1.2.6"
+LAST_UPDATE="20140219_1641"
 
 # Color function
 # Input: $1->color, $2->message, $3->newline or not
@@ -839,6 +839,7 @@ function del_site()
 	local num_check=0
 	local userip_check=0
 	local desc_check=0
+	local tag_check=0
 
 	# Find indexes of the deleting site
 	for num in $@; do
