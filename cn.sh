@@ -1,8 +1,9 @@
 #/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.2.6"
-LAST_UPDATE="20140219_1641"
+VERSION="1.3.0"
+LAST_UPDATE="20140222_1700"
+DEFAULT_SSH_PORT=22
 
 # Color function
 # Input: $1->color, $2->message, $3->newline or not
@@ -28,7 +29,7 @@ function check_n_exit()
 	if [ $1 -ne 0 ]; then
 		color_msg 31 "$2"
 
-		exit 1
+		exit $1
 	fi
 }
 
@@ -47,6 +48,7 @@ function unset_site()
 {
 	unset site_num
 	unset site_userip
+	unset site_port
 	unset site_desc
 	unset site_status
 	unset site_feq
@@ -61,6 +63,7 @@ function read_sites()
 	num_of_sites=0
 	max_num_len=2
 	max_userip_len=7
+	max_port_len=2
 	max_desc_len=11
 	max_status_len=6
 	max_feq_len=9
@@ -77,10 +80,11 @@ function read_sites()
 			local th=$(echo ${array[0]} | bc)
 			site_num[$th]=$th
 			site_userip[$th]=${array[1]}
-			site_desc[$th]=${array[2]}
-			site_status[$th]=${array[3]}
-			site_feq[$th]=${array[4]}
-			site_tag[$th]=${array[5]}
+			site_port[$th]=${array[2]}
+			site_desc[$th]=${array[3]}
+			site_status[$th]=${array[4]}
+			site_feq[$th]=${array[5]}
+			site_tag[$th]=${array[6]}
 
 			if [ "${site_num[$th]}" != "" ]; then
 				num_of_sites=$(($num_of_sites+1))
@@ -89,25 +93,23 @@ function read_sites()
 			# Read max length for each column at the first loop
 			max_num_len=$( echo ${array[0]} | bc )
 			max_userip_len=$( echo ${array[1]} | bc )
-			max_desc_len=$( echo ${array[2]} | bc )
-			max_status_len=$( echo ${array[3]} | bc )
-			max_feq_len=$( echo ${array[4]} | bc )
-
-			if [ "${array[5]}" != "" ]; then
-				max_tag_len=$( echo ${array[5]} | bc )
-			fi
+			max_port_len=$( echo ${array[2]} | bc )
+			max_desc_len=$( echo ${array[3]} | bc )
+			max_status_len=$( echo ${array[4]} | bc )
+			max_feq_len=$( echo ${array[5]} | bc )
+			max_tag_len=$( echo ${array[6]} | bc )
 			read_max=1
-			total_len=$(( $max_num_len + $max_userip_len + $max_desc_len + $max_status_len + $max_feq_len + $max_tag_len + 10 ))
+			total_len=$(( $max_num_len + $max_userip_len + $max_port_len + $max_desc_len + $max_status_len + $max_feq_len + $max_tag_len + 10 ))
 		fi
 	done < $DATA
 }
 
 function export_to_file()
 {
-	echo "$max_num_len"_"$max_userip_len"_"$max_desc_len"_"$max_status_len"_"$max_feq_len"_"$max_tag_len" > $DATA
+	echo "$max_num_len"_"$max_userip_len"_"$max_port_len"_"$max_desc_len"_"$max_status_len"_"$max_feq_len"_"$max_tag_len" > $DATA
 
 	for i in ${!site_num[*]}; do
-		echo "${site_num[$i]}"_"${site_userip[$i]}"_"${site_desc[$i]}"_"${site_status[$i]}"_"${site_feq[$i]}"_"${site_tag[$i]}"
+		echo "${site_num[$i]}"_"${site_userip[$i]}"_"${site_port[$i]}"_"${site_desc[$i]}"_"${site_status[$i]}"_"${site_feq[$i]}"_"${site_tag[$i]}"
 	done >> $DATA
 }
 
@@ -166,6 +168,13 @@ function print_dash()
 	if [ -z $1 ]; then
 		echo -n "+"
 
+		for ((i=0;i<=$(($max_port_len+1));i++))
+		do
+			echo -n "-"
+		done
+
+		echo -n "+"
+
 		for ((i=0;i<=$(($max_desc_len+1));i++))
 		do
 			echo -n "-"
@@ -199,7 +208,7 @@ function print_tag_dash()
 {
 	echo -n "+"
 
-	for ((i=0;i<=$(($total_len+6));i++))
+	for ((i=0;i<=$(($total_len+9));i++))
 	do
 		echo -n "-"
 	done
@@ -220,7 +229,7 @@ function print_tag_head()
 	print_tag_dash
 
 	color_msg 37 "| Tag: " -n
-	color_msg_len "1;32" "$tag" $total_len -n
+	color_msg_len "1;32" "$tag" $(($total_len+3)) -n
 	color_msg 37 " |"
 
 	print_dash
@@ -242,6 +251,8 @@ function print_head_tail()
 
 		if [ -z $2 ]; then
 			color_msg 37 " | " -n
+			color_msg_len 37 "Port" $max_port_len -n
+			color_msg 37 " | " -n
 			color_msg_len 37 "Description" $max_desc_len -n
 			color_msg 37 " | " -n
 			color_msg_len 37 "Status" $max_status_len -n
@@ -254,7 +265,15 @@ function print_head_tail()
 		color_msg 37 " |"
 		print_dash "$2"
 	fi
+}
 
+function empty_check()
+{
+	if [ "$1" == "NA" ]; then
+		echo " "
+	else
+		echo "$1"
+	fi
 }
 
 # Display the given site
@@ -268,13 +287,15 @@ function display_entry()
 
 		if [ -z $3 ]; then
 			color_msg 37 " | " -n
-			color_msg_len $1 "${site_desc[$2]}" $max_desc_len -n
+			color_msg_len $1 "${site_port[$2]}" $max_port_len -n
 			color_msg 37 " | " -n
-			color_msg_len $1 "${site_status[$2]}" $max_status_len -n
+			color_msg_len $1 "$(empty_check "${site_desc[$2]}")" $max_desc_len -n
+			color_msg 37 " | " -n
+			color_msg_len $1 "$(empty_check "${site_status[$2]}")" $max_status_len -n
 			color_msg 37 " | " -n
 			color_msg_len $1 "${site_feq[$2]}" $max_feq_len -n
 			color_msg 37 " | " -n
-			color_msg_len $1 "${site_tag[$2]}" $max_tag_len -n
+			color_msg_len $1 "$(empty_check "${site_tag[$2]}")" $max_tag_len -n
 		fi
 
 		color_msg 37 " |"
@@ -339,8 +360,8 @@ function display_sites()
 
 					break
 				fi
-			done
-		done
+			done # for kw
+		done # for i
 	fi
 
 	print_head_tail "tail"
@@ -390,7 +411,7 @@ function scp_from()
 
 	for i in $@; do
 		if [ "${site_num[$i]}" != "" ]; then
-			scp -r "${site_userip[$i]}:$file" .
+			scp -r -P "${site_port[$i]}" "${site_userip[$i]}:$file" .
 		fi
 	done
 
@@ -402,6 +423,7 @@ function scp_from()
 		return 1
 	fi
 }
+
 # Secure copy file to the remote site.
 # Input: $1->the file which will be copied, $2,3,...->site number
 function scp_to()
@@ -416,7 +438,7 @@ function scp_to()
 
 	for i in $@; do
 		if [ "${site_num[$i]}" != "" ]; then
-			scp -r "$file" "${site_userip[$i]}:"
+			scp -r -P ${site_port[$i]} "$file" "${site_userip[$i]}:"
 		fi
 	done
 
@@ -457,8 +479,6 @@ function reg_key()
 
 	local ip=$(find_ip $1)
 	check_n_exit $? "[$1] does not exist."
-	local user=$(find_user "$1")
-	check_n_exit $? "[$1] does not exist."
 
 	# Copy local public key to the remote site.
 	echo -e
@@ -473,8 +493,9 @@ function reg_key()
 	color_msg 32 "Registering public key to [" -n
 	color_msg 33 "$ip" -n
 	color_msg 32 "] ..."
+
 	local cmd="mkdir -p ~/.ssh; cat id_rsa.pub >> ~/.ssh/authorized_keys; rm -rf id_rsa.pub"
-	ssh ${site_userip[$1]} "$cmd"
+	ssh -p ${site_port[$1]} ${site_userip[$1]} "$cmd"
 	check_n_exit $? "Register public key failed"
 
 	echo -e
@@ -499,6 +520,7 @@ function add_node_to_num()
 	local field1_len=$(strlen "$1")
 	local field2_len=$(strlen "$2")
 	local field3_len=$(strlen "$3")
+	local field4_len=$(strlen "$4")
 
 	if [ $field1_len -gt $max_num_len ]; then
 		max_num_len=$field1_len
@@ -512,11 +534,22 @@ function add_node_to_num()
 		max_desc_len=$field3_len
 	fi
 
+	if [ $field4_len -gt $max_port_len ]; then
+		max_port_len=$field4_len
+	fi
+
 	site_num[$1]="$1"
 	site_userip[$1]="$2"
 	site_desc[$1]="$3"
+	site_status[$1]="NA"
 	site_feq[$1]=0
 	site_tag[$1]=""
+
+	if [ "$4" == "" ]; then
+		site_port[$1]="$DEFAULT_SSH_PORT"
+	else
+		site_port[$1]="$4"
+	fi
 
 	export_to_file
 }
@@ -536,7 +569,7 @@ function find_insert_num()
 function add_node()
 {
 	if [ -z "$1" ]; then
-		color_msg 31 "No arguments. Please input at least 'user@ip'."
+		display_add_usage
 		exit 1
 	fi
 
@@ -550,11 +583,11 @@ function add_node()
 		read -p "(y/n)" yn
 
 		case $yn in
-			[Yy]* ) add_node_to_num "$num" "$1" "$2"
+			[Yy]* ) add_node_to_num "$num" "$1" "$2" "$3"
 					return $num
 					;;
 			[Nn]* ) read -p "Input your number:" un
-					add_node_to_num $un "$1" "$2";;
+					add_node_to_num $un "$1" "$2" "$3";;
 			* ) echo "Please answer y or a number you want to add";;
 		esac
 
@@ -643,6 +676,29 @@ function display_usg_tag()
 	color_msg 38 "        ex: cn t \"TAG\" 3 5 6 8"
 }
 
+function display_add_usage()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "a" -n
+	color_msg 38 ": cn a " -n
+	color_msg 33 "\"user@ip\" [\"desc\"] [port]"
+	color_msg 38 "        Add a new site."
+	color_msg 38 "        ex: cn a user@127.0.0.1"
+	color_msg 38 "        ex: cn a user@127.0.0.1 \"Description of the site.\""
+	color_msg 38 "        ex: cn a user@127.0.0.1 \"Description of the site.\" 2222"
+}
+
+function display_del_usage()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "d" -n
+	color_msg 38 ": cn d " -n
+	color_msg 33 "#num1 [#num2] [#num3]"
+	color_msg 38 "        Delete a site (num). "
+	color_msg 38 "        ex: cn d 3"
+	color_msg 38 "        ex: cn d 3 5 7 9"
+}
+
 # Display the usage of 'cn' command
 function display_usage()
 {
@@ -691,23 +747,9 @@ function display_usage()
 	color_msg 34 "(list only sites which are tagged as TAG.)"
 
 	display_reg_usage
-
-	color_msg 38 "   - " -n
-	color_msg 32 "a" -n
-	color_msg 38 ": cn a " -n
-	color_msg 33 "\"user@ip\" [\"desc\"]"
-	color_msg 38 "        Add a new site."
-	color_msg 38 "        ex: cn a user@127.0.0.1 \"Description of the site.\""
-	color_msg 38 "        ex: cn a \"-p 2222 user@127.0.0.1 \"Description of the site.\""
-
+	display_add_usage
 	display_ac_usg
-
-	color_msg 38 "   - " -n
-	color_msg 32 "d" -n
-	color_msg 38 ": cn d " -n
-	color_msg 33 "#num"
-	color_msg 38 "        Delete a site (num). "
-	color_msg 38 "        ex: cn d 3"
+	display_del_usage
 
 	display_scp_to
 	display_scp_from
@@ -769,8 +811,9 @@ function display_usage()
 # Find maximum string length.
 # Input: $1->1 to find the maximum number string length
 #        $2->1 to find the maximum userip string length
-#        $3->1 to find maximum description string length
-#        $4->1 to find maximum tag string length
+#        $3->1 to find the maximum port string length
+#        $4->1 to find maximum description string length
+#        $5->1 to find maximum tag string length
 function find_max_len()
 {
 	local len=0
@@ -795,6 +838,18 @@ function find_max_len()
 
 			if [ $len -gt $max_userip_len ]; then
 				max_userip_len=$len
+			fi
+		done
+	fi
+
+	if [ $3 -eq 1 ];then
+		max_port_len=0
+
+		for item in ${site_port[*]}; do
+			len=$(strlen "$item")
+
+			if [ $len -gt $max_port_len ]; then
+				max_port_len=$len
 			fi
 		done
 	fi
@@ -828,16 +883,14 @@ function find_max_len()
 function del_site()
 {
 	if [ -z "$2" ]; then
-		display_sites
-
-		echo -e
-		color_msg 38 "Usage: conn d [num1 num2 num3 ...]"
+		display_del_usage
 		exit 0
 	fi
 
 	shift 1
 	local num_check=0
 	local userip_check=0
+	local port_check=0
 	local desc_check=0
 	local tag_check=0
 
@@ -851,6 +904,10 @@ function del_site()
 			userip_check=1
 		fi
 
+		if [ $(strlen "${site_port[$num]}") -eq $max_port_len ]; then
+			port_check=1
+		fi
+
 		if [ $(strlen "${site_desc[$num]}") -eq $max_desc_len ]; then
 			desc_check=1
 		fi
@@ -862,7 +919,7 @@ function del_site()
 		unset_entry $num
 	done
 
-	find_max_len $num_check $userip_check $desc_check $tag_check
+	find_max_len $num_check $userip_check $port_check $desc_check $tag_check
 	export_to_file
 }
 
@@ -870,6 +927,7 @@ function unset_tmp_site()
 {
 	unset tmp_site_num
 	unset tmp_site_userip
+	unset tmp_site_port
 	unset tmp_site_desc
 	unset tmp_site_status
 	unset tmp_site_feq
@@ -880,10 +938,11 @@ function assign_tmp_entry()
 {
 	tmp_site_num[$1]="$2"
 	tmp_site_userip[$1]="$3"
-	tmp_site_desc[$1]="$4"
-	tmp_site_status[$1]="$5"
-	tmp_site_feq[$1]="$6"
-	tmp_site_tag[$1]="$7"
+	tmp_site_port[$1]="$4"
+	tmp_site_desc[$1]="$5"
+	tmp_site_status[$1]="$6"
+	tmp_site_feq[$1]="$7"
+	tmp_site_tag[$1]="$8"
 }
 
 function renumber_sites()
@@ -892,7 +951,7 @@ function renumber_sites()
 
 	# Save reordered site to tmp_site
 	for i in ${!site_num[*]}; do
-		assign_tmp_entry $j "$j" "${site_userip[$i]}" "${site_desc[$i]}" "${site_status[$i]}" "${site_feq[$i]}" "${site_tag[$i]}"
+		assign_tmp_entry $j "$j" "${site_userip[$i]}" "${site_port[$i]}" "${site_desc[$i]}" "${site_status[$i]}" "${site_feq[$i]}" "${site_tag[$i]}"
 		j=$(($j+1))
 	done
 
@@ -902,6 +961,7 @@ function renumber_sites()
 	for i in ${!tmp_site_num[*]}; do
 		site_num[$j]="${tmp_site_num[$i]}"
 		site_userip[$j]="${tmp_site_userip[$i]}"
+		site_port[$j]="${tmp_site_port[$i]}"
 		site_desc[$j]="${tmp_site_desc[$i]}"
 		site_status[$j]="${tmp_site_status[$i]}"
 		site_feq[$j]="${tmp_site_feq[$i]}"
@@ -927,16 +987,18 @@ function assign_entry_data()
 {
 	site_num[$1]="$2"
 	site_userip[$1]="$3"
-	site_desc[$1]="$4"
-	site_status[$1]="$5"
-	site_feq[$1]="$6"
-	site_tag[$1]="$7"
+	site_port[$1]="$4"
+	site_desc[$1]="$5"
+	site_status[$1]="$6"
+	site_feq[$1]="$7"
+	site_tag[$1]="$8"
 }
 
 function unset_entry()
 {
 	unset site_num[$1]
 	unset site_userip[$1]
+	unset site_port[$1]
 	unset site_desc[$1]
 	unset site_status[$1]
 	unset site_feq[$1]
@@ -958,7 +1020,7 @@ function move_function()
 	# This will occurs when $1 > $2, we let $3 = $1 and this check is to limit
 	# the recursive routine stops at most on the position of $1.
 	if [ $2 -eq $3 ]; then
-		assign_entry_data $2 "$2" "${site_userip[$1]}" "${site_desc[$1]}" "${site_status[$1]}" "${site_feq[$1]}" "${site_tag[$1]}"
+		assign_entry_data $2 "$2" "${site_userip[$1]}" "${site_port[$1]}" "${site_desc[$1]}" "${site_status[$1]}" "${site_feq[$1]}" "${site_tag[$1]}"
 		return 0
 	fi
 
@@ -966,6 +1028,7 @@ function move_function()
 	#local num="${site_num[$2]}"
 	local num="$2"
 	local userip="${site_userip[$1]}"
+	local port="${site_port[$1]}"
 	local desc="${site_desc[$1]}"
 	local status="${site_status[$1]}"
 	local feq="${site_feq[$1]}"
@@ -981,7 +1044,7 @@ function move_function()
 
 	# We have make sure the dest is empty or is moved to its next. So, we can
 	# assign value to it (move over).
-	assign_entry_data $2 "$num" "$userip" "$desc" "$status" "$feq" "$tag"
+	assign_entry_data $2 "$num" "$userip" "$port" "$desc" "$status" "$feq" "$tag"
 
 	# When $2 > $1, after we move $1 to its next, we have to unset its original
 	# position
@@ -1074,7 +1137,7 @@ function modify_userip()
 {
 	if [ "${site_num[$1]}" != "" ] && [ "$2" != "" ]; then
 		site_userip[$1]="$2"
-		find_max_len 0 1 0 0
+		find_max_len 0 1 0 0 0
 		export_to_file
 	else
 		display_mu_usage
@@ -1088,7 +1151,7 @@ function modify_desc()
 {
 	if [ "${site_num[$1]}" != "" ] && [ "$2" != "" ]; then
 		site_desc[$1]="$2"
-		find_max_len 0 0 1 0
+		find_max_len 0 0 0 1 0
 		export_to_file
 	else
 		display_md_usage
@@ -1164,12 +1227,12 @@ function sort_by_feq()
 			found_i=$(find_mim_feq)
 		fi
 
-		assign_tmp_entry $i "$i" "${site_userip[$found_i]}" "${site_desc[$found_i]}" "${site_status[$found_i]}" "${site_feq[$found_i]}" "${site_tag[$found_i]}"
+		assign_tmp_entry $i "$i" "${site_userip[$found_i]}" "${site_port[$found_i]}" "${site_desc[$found_i]}" "${site_status[$found_i]}" "${site_feq[$found_i]}" "${site_tag[$found_i]}"
 		unset_entry $found_i
 	done
 
 	for i in ${!tmp_site_num[*]}; do
-		assign_entry_data $i "${tmp_site_num[$i]}" "${tmp_site_userip[$i]}" "${tmp_site_desc[$i]}" "${tmp_site_status[$i]}" "${tmp_site_feq[$i]}" "${tmp_site_tag[$i]}"
+		assign_entry_data $i "${tmp_site_num[$i]}" "${tmp_site_userip[$i]}" "${tmp_site_port[$i]}" "${tmp_site_desc[$i]}" "${tmp_site_status[$i]}" "${tmp_site_feq[$i]}" "${tmp_site_tag[$i]}"
 	done
 
 	unset_tmp_site
@@ -1279,10 +1342,10 @@ function connect_by()
 		# With X-Forwarding
 		if [ "$3" == "x" ]; then
 			color_msg 32 "SSH to ${site_userip[$2]} with X-Forwarding"
-			ssh -X ${site_userip[$2]}
+			ssh -p ${site_port[$2]} -X ${site_userip[$2]}
 		else
 			color_msg 32 "SSH to ${site_userip[$2]}"
-			ssh ${site_userip[$2]}
+			ssh -p ${site_port[$2]} ${site_userip[$2]}
 		fi
 
 		return 0
@@ -1347,7 +1410,7 @@ function deploy_to()
 
 	for i in $@; do
 		color_msg 38 "Deploying ${site_userip[$i]}..."
-		ssh -t ${site_userip[$i]} "sudo mv ~/cn /usr/local/bin/cn"
+		ssh -p ${site_port[$i]} -t ${site_userip[$i]} "sudo mv ~/cn /usr/local/bin/cn"
 		color_msg 32 "Deploy ${site_userip[$i]} successfully."
 	done
 }
@@ -1369,7 +1432,7 @@ function cmd_to()
 		ip=$(find_ip $i)
 		color_msg 32 "Send command to " -n
 		color_msg 33 "$ip"
-		ssh -t ${site_userip[$i]} "$cmd"
+		ssh -p ${site_port[$i]} -t ${site_userip[$i]} "$cmd"
 	done
 }
 
@@ -1521,7 +1584,7 @@ else
 			display_sites $@
 			exit 0;;
 		[a] )
-			add_node "$2" "$3"
+			add_node "$2" "$3" "$4"
 			display_sites
 			exit 0;;
 		[d] )
@@ -1603,10 +1666,6 @@ else
 			shift 1
 			cmd_to "$@"
 			exit 0;;
-		sh )
-			shift 1
-			search_site_by_keyword $@
-			exit 0;;
 		upgrade )
 			do_upgrade
 			exit 0;;
@@ -1616,7 +1675,7 @@ else
 				exit 0
 			fi
 
-			add_node "$2" "$3"
+			add_node "$2" "$3" "$4"
 			connect_by "ssh" $?
 			exit 0;;
 	esac
