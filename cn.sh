@@ -1,9 +1,16 @@
 #/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.3.0"
-LAST_UPDATE="20140222_1700"
+VERSION="1.3.1"
+LAST_UPDATE="20140227_0947"
 DEFAULT_SSH_PORT=22
+DEFAULT_MAX_NUM_LEN=2
+DEFAULT_MAX_USERIP_LEN=7
+DEFAULT_MAX_PORT_LEN=2
+DEFAULT_MAX_DESC_LEN=11
+DEFAULT_MAX_STATUS_LEN=6
+DEFAULT_MAX_FEQ_LEN=9
+DEFAULT_MAX_TAG_LEN=3
 
 # Color function
 # Input: $1->color, $2->message, $3->newline or not
@@ -55,19 +62,50 @@ function unset_site()
 	unset site_tag
 }
 
+function check_max_len()
+{
+	if [ $max_num_len -lt $DEFAULT_MAX_NUM_LEN ]; then
+		max_num_len=$DEFAULT_MAX_NUM_LEN
+	fi
+
+	if [ $max_userip_len -lt $DEFAULT_MAX_USERIP_LEN ]; then
+		max_userip_len=$DEFAULT_MAX_USERIP_LEN
+	fi
+
+	if [ $max_port_len -lt $DEFAULT_MAX_PORT_LEN ]; then
+		max_port_len=$DEFAULT_MAX_PORT_LEN
+	fi
+
+	if [ $max_desc_len -lt $DEFAULT_MAX_DESC_LEN ]; then
+		max_desc_len=$DEFAULT_MAX_DESC_LEN
+	fi
+
+	if [ $max_status_len -lt $DEFAULT_MAX_STATUS_LEN ]; then
+		max_status_len=$DEFAULT_MAX_STATUS_LEN
+	fi
+
+	if [ $max_feq_len -lt $DEFAULT_MAX_FEQ_LEN ]; then
+		max_feq_len=$DEFAULT_MAX_FEQ_LEN
+	fi
+
+	if [ $max_tag_len -lt $DEFAULT_MAX_TAG_LEN ]; then
+		max_tag_len=$DEFAULT_MAX_TAG_LEN
+	fi
+}
+
 # Read all sites data into 'sites'
 function read_sites()
 {
 	local len=0
 	local read_max=0
 	num_of_sites=0
-	max_num_len=2
-	max_userip_len=7
-	max_port_len=2
-	max_desc_len=11
-	max_status_len=6
-	max_feq_len=9
-	max_tag_len=3
+	max_num_len=$DEFAULT_MAX_NUM_LEN
+	max_userip_len=$DEFAULT_MAX_USERIP_LEN
+	max_port_len=$DEFAULT_MAX_PORT_LEN
+	max_desc_len=$DEFAULT_MAX_DESC_LEN
+	max_status_len=$DEFAULT_MAX_STATUS_LEN
+	max_feq_len=$DEFAULT_MAX_FEQ_LEN
+	max_tag_len=$DEFAULT_MAX_TAG_LEN
 	total_len=0
 	unset_site
 
@@ -98,6 +136,7 @@ function read_sites()
 			max_status_len=$( echo ${array[4]} | bc )
 			max_feq_len=$( echo ${array[5]} | bc )
 			max_tag_len=$( echo ${array[6]} | bc )
+			check_max_len
 			read_max=1
 			total_len=$(( $max_num_len + $max_userip_len + $max_port_len + $max_desc_len + $max_status_len + $max_feq_len + $max_tag_len + 10 ))
 		fi
