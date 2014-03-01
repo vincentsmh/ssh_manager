@@ -1,8 +1,8 @@
 #/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.3.1"
-LAST_UPDATE="20140227_0947"
+VERSION="1.3.2"
+LAST_UPDATE="201400301_1818"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -93,6 +93,22 @@ function check_max_len()
 	fi
 }
 
+# $1 -> string to be converted
+# $2:
+#   0: replace _ by \=\=
+#   1: replace \=\= by _
+function convert_symbol()
+{
+	if [ $2 -eq 0 ]; then
+		echo "$1" | sed "s/_/\\\=\\\=/g"
+	elif [ $2 -eq 1 ]; then
+		echo "$1" | sed "s/\=\=/_/g"
+	else
+		color_msg 31 "Error in convert_symbol(). Please check $HOME/conn.log"
+		log "Fail in convert_symbol(). Wrong second argument [$2]"
+	fi
+}
+
 # Read all sites data into 'sites'
 function read_sites()
 {
@@ -117,12 +133,12 @@ function read_sites()
 		if [ $read_max -ne 0 ]; then
 			local th=$(echo ${array[0]} | bc)
 			site_num[$th]=$th
-			site_userip[$th]=${array[1]}
+			site_userip[$th]=$( convert_symbol "${array[1]}" 1)
 			site_port[$th]=${array[2]}
-			site_desc[$th]=${array[3]}
+			site_desc[$th]=$( convert_symbol "${array[3]}" 1)
 			site_status[$th]=${array[4]}
 			site_feq[$th]=${array[5]}
-			site_tag[$th]=${array[6]}
+			site_tag[$th]=$( convert_symbol "${array[6]}" 1)
 
 			if [ "${site_num[$th]}" != "" ]; then
 				num_of_sites=$(($num_of_sites+1))
@@ -148,7 +164,11 @@ function export_to_file()
 	echo "$max_num_len"_"$max_userip_len"_"$max_port_len"_"$max_desc_len"_"$max_status_len"_"$max_feq_len"_"$max_tag_len" > $DATA
 
 	for i in ${!site_num[*]}; do
-		echo "${site_num[$i]}"_"${site_userip[$i]}"_"${site_port[$i]}"_"${site_desc[$i]}"_"${site_status[$i]}"_"${site_feq[$i]}"_"${site_tag[$i]}"
+		local userip=$(convert_symbol "${site_userip[$i]}" 0)
+		local desc=$(convert_symbol "${site_desc[$i]}" 0)
+		local tag=$(convert_symbol "${site_tag[$i]}" 0)
+
+		echo "${site_num[$i]}"_"$userip"_"${site_port[$i]}"_"$desc"_"${site_status[$i]}"_"${site_feq[$i]}"_"$tag"
 	done >> $DATA
 }
 
