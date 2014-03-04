@@ -1,8 +1,8 @@
 #/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.3.2"
-LAST_UPDATE="201400301_1818"
+VERSION="1.3.3"
+LAST_UPDATE="201400304_1401"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -133,12 +133,15 @@ function read_sites()
 		if [ $read_max -ne 0 ]; then
 			local th=$(echo ${array[0]} | bc)
 			site_num[$th]=$th
-			site_userip[$th]=$( convert_symbol "${array[1]}" 1)
+			#site_userip[$th]=$( convert_symbol "${array[1]}" 1)
+			site_userip[$th]=${array[1]}
 			site_port[$th]=${array[2]}
-			site_desc[$th]=$( convert_symbol "${array[3]}" 1)
+			#site_desc[$th]=$( convert_symbol "${array[3]}" 1)
+			site_desc[$th]=${array[3]}
 			site_status[$th]=${array[4]}
 			site_feq[$th]=${array[5]}
-			site_tag[$th]=$( convert_symbol "${array[6]}" 1)
+			#site_tag[$th]=$( convert_symbol "${array[6]}" 1)
+			site_tag[$th]=${array[6]}
 
 			if [ "${site_num[$th]}" != "" ]; then
 				num_of_sites=$(($num_of_sites+1))
@@ -1444,7 +1447,7 @@ function find_this_utility()
 	if [ -f "/usr/bin/cn" ]; then
 		echo "/usr/bin/cn"
 	elif [ -f "/usr/local/bin/cn" ]; then
-		echo "usr/local/bin/cn"
+		echo "/usr/local/bin/cn"
 	fi
 }
 
