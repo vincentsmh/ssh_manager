@@ -1,8 +1,8 @@
 #/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.3.4" #Current version
-LAST_UPDATE="201400310_1431"
+VERSION="1.3.5" #Current version
+LAST_UPDATE="201400310_2110"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -153,6 +153,12 @@ function read_sites()
 			max_status_len=$( echo ${array[4]} | bc )
 			max_feq_len=$( echo ${array[5]} | bc )
 			max_tag_len=$( echo ${array[6]} | bc )
+			lst_ckday=$( echo ${array[7]} | bc )
+
+			if [ "$lst_ckday" == "" ]; then
+				lst_ckday=$(date +"%d")
+			fi
+
 			check_max_len
 			read_max=1
 			total_len=$(( $max_num_len + $max_userip_len + $max_port_len + $max_desc_len + $max_status_len + $max_feq_len + $max_tag_len + 10 ))
@@ -162,7 +168,7 @@ function read_sites()
 
 function export_to_file()
 {
-	echo "$max_num_len"_"$max_userip_len"_"$max_port_len"_"$max_desc_len"_"$max_status_len"_"$max_feq_len"_"$max_tag_len" > $DATA
+	echo "$max_num_len"_"$max_userip_len"_"$max_port_len"_"$max_desc_len"_"$max_status_len"_"$max_feq_len"_"$max_tag_len"_"$lst_ckday" > $DATA
 
 	for i in ${!site_num[*]}; do
 		local userip=$(convert_symbol "${site_userip[$i]}" 0)
@@ -1509,9 +1515,13 @@ function has_binary()
 
 function checkout_cn()
 {
-	mkdir -p $CHECKOUT_FOLDER &>-
+	mkdir -p $CHECKOUT_FOLDER &> /dev/null
 	cd $CHECKOUT_FOLDER
-	git clone https://github.com/vincentsmh/ssh_script &>-
+	git clone https://github.com/vincentsmh/ssh_script &> /dev/null
+
+	local context=$( head -5 ssh_script/cn.sh )
+	new_ver=$( echo "$context" | grep "VERSION=" | awk -F "\"" {'print $2'})
+	new_lst_upd=$( echo "$context" | grep "LAST_UPDATE=" | awk -F "\"" {'print $2'})
 }
 
 # Upgrade this utility to the newest version
@@ -1530,16 +1540,14 @@ function do_upgrade()
 	# Checkout and get version
 	color_msg 38 "Checking new version and doing upgrade ... " -n
 	checkout_cn
-	local ver=$(cat ssh_script/cn.sh | grep "VERSION=" | awk -F "\"" {'print $2'})
-	local lst_upd=$(cat ssh_script/cn.sh | grep "LAST_UPDATE=" | awk -F "\"" {'print $2'})
-	color_msg 32 "[Finish]"
 
-	if [ "$ver" != "" ] && [ "$ver" != "$VERSION" ]; then
+	if [ "$new_ver" != "" ] && [ "$new_ver" != "$VERSION" ]; then
+		color_msg 32 "Updating ... "
 		# Upgrade
 		cd ssh_script
 		sudo bash setup.sh
 		cd ..
-		show_version "$ver" "$lst_upd"
+		show_version "$new_ver" "$new_lst_upd"
 	else
 		color_msg 32 "Up to date"
 	fi
@@ -1669,19 +1677,19 @@ function list_by_tag()
 # 0: unnecessary, 1: necessary
 function is_update_necessary()
 {
-	UPDATE_CHECK_INTERVAL=3 # number of days
-	cur_day=$(date +"%d")
+	local UPDATE_CHECK_INTERVAL=7 # Default days for checking new version
+	local cur_day=$(date +"%d")
 	local utility_path=$(find_this_utility)
-	ut_day=$(date -r $utility_path +"%d")
 
-	if [ $cur_day -gt $ut_day ]; then
-		diff=$(( $cur_day - $ut_day ))
+	if [ $cur_day -gt $lst_ckday ]; then
+		diff=$(( $cur_day - $lst_ckday ))
 	else
-		diff=$(( $ut_day - $cur_day ))
+		diff=$(( $lst_ckday - $cur_day ))
 	fi
 
 	if [ $diff -ge $UPDATE_CHECK_INTERVAL ]; then
-		touch $utility_path
+		lst_ckday=$cur_day
+		export_to_file
 		return 1
 	else
 		return 0
@@ -1706,20 +1714,29 @@ function check_update()
 
 	# Checkout and get version
 	checkout_cn
-	local ver=$(cat ssh_script/cn.sh | grep "VERSION=" | awk -F "\"" {'print $2'})
-	local lst_upd=$(cat ssh_script/cn.sh | grep "LAST_UPDATE=" | awk -F "\"" {'print $2'})
 
-	if [ "$ver" != "" ] && [ "$ver" != "$VERSION" ]; then
+	if [ "$new_ver" != "" ] && [ "$new_ver" != "$VERSION" ]; then
 		echo -e
-		color_msg "1;5;33" "[Update available]"
-		color_msg 38 "You can do 'cn upgrade' to update"
+		color_msg "1;5;33" "[New update available]"
 		echo -e
+		read -p "Would you want to upgrade now? (y/n)" yn
+
+		case $yn in
+			[Yy]* )
+				cd ssh_script
+				sudo bash setup.sh
+				cd ..
+				show_version "$new_ver" "$new_lst_upd"
+				;;
+			[Nn]* )
+				color_msg 38 "You can do 'cn upgrade' to update later"
+				;;
+		esac
 	fi
 
 	# Clean up
 	cd ..
-	rm -rf $CHECKOUT_FOLDER &>-
-
+	rm -rf $CHECKOUT_FOLDER &> /dev/null
 	return 0
 }
 
