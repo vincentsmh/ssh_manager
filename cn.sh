@@ -1,8 +1,8 @@
 #/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.3.3"
-LAST_UPDATE="201400304_1401"
+VERSION="1.3.4" #Current version
+LAST_UPDATE="201400305_1102"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -11,6 +11,7 @@ DEFAULT_MAX_DESC_LEN=11
 DEFAULT_MAX_STATUS_LEN=6
 DEFAULT_MAX_FEQ_LEN=9
 DEFAULT_MAX_TAG_LEN=3
+CHECKOUT_FOLDER=".cn_upgrade"
 
 # Color function
 # Input: $1->color, $2->message, $3->newline or not
@@ -133,15 +134,12 @@ function read_sites()
 		if [ $read_max -ne 0 ]; then
 			local th=$(echo ${array[0]} | bc)
 			site_num[$th]=$th
-			#site_userip[$th]=$( convert_symbol "${array[1]}" 1)
-			site_userip[$th]=${array[1]}
+			site_userip[$th]=$( convert_symbol "${array[1]}" 1 )
 			site_port[$th]=${array[2]}
-			#site_desc[$th]=$( convert_symbol "${array[3]}" 1)
-			site_desc[$th]=${array[3]}
+			site_desc[$th]=$( convert_symbol "${array[3]}" 1 )
 			site_status[$th]=${array[4]}
 			site_feq[$th]=${array[5]}
-			#site_tag[$th]=$( convert_symbol "${array[6]}" 1)
-			site_tag[$th]=${array[6]}
+			site_tag[$th]=$( convert_symbol "${array[6]}" 1 )
 
 			if [ "${site_num[$th]}" != "" ]; then
 				num_of_sites=$(($num_of_sites+1))
@@ -1403,10 +1401,10 @@ function connect_by()
 	if [ "$1" == "ssh" ]; then
 		# With X-Forwarding
 		if [ "$3" == "x" ]; then
-			color_msg 32 "SSH to ${site_userip[$2]} with X-Forwarding"
+			color_msg 32 "SSH to ${site_userip[$2]}:${site_port[$2]} with X-Forwarding"
 			ssh -p ${site_port[$2]} -X ${site_userip[$2]}
 		else
-			color_msg 32 "SSH to ${site_userip[$2]}"
+			color_msg 32 "SSH to ${site_userip[$2]}:${site_port[$2]}"
 			ssh -p ${site_port[$2]} ${site_userip[$2]}
 		fi
 
@@ -1426,13 +1424,13 @@ function connect_by()
 			rdesktop ) open rdp://$ip:$port ;;
 		esac
 	else
-		check=$(command -v "$1" | grep -c "$1")
+		has_binary "$1"
 
-		if [ "$check" == "1" ]; then
+		if [ ?$ -eq 1 ]; then
 			case "$1" in
-				ftp ) $1 $ip $port $4 ;;
+				ftp )       $1 $ip $port $4 ;;
 				vncviewer ) $1 $ip:$port $4 ;;
-				rdesktop ) $1 $ip:$port $4 ;;
+				rdesktop )  $1 $ip:$port $4 ;;
 			esac
 		else
 			color_msg 31 "Require utility: " -n
@@ -1498,34 +1496,58 @@ function cmd_to()
 	done
 }
 
+function has_binary()
+{
+	local bin_cmd=$(command -v "$1")
+
+	if [ "$bin_cmd" == "" ]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
+function checkout_cn()
+{
+	mkdir -p $CHECKOUT_FOLDER &>-
+	cd $CHECKOUT_FOLDER
+	git clone https://github.com/vincentsmh/ssh_script &>-
+}
+
 # Upgrade this utility to the newest version
 function do_upgrade()
 {
 	show_version
 
 	# Check git client tool
-	local git_cmd=$(command -v git)
+	has_binary "git"
 
-	if [ "$git_cmd" == "" ]; then
+	if [ $? -eq 0 ]; then
 		color_msg 31 "Please make sure you have git client tool."
 		return 0
 	fi
 
-	# Checkout
-	local CHECKOUT_FOLDER=".cn_upgrade"
-	mkdir -p $CHECKOUT_FOLDER
-	cd $CHECKOUT_FOLDER
-	$git_cmd clone https://github.com/vincentsmh/ssh_script >> /dev/null
+	# Checkout and get version
+	color_msg 38 "Checking new version and doing upgrade ... " -n
+	checkout_cn
+	local ver=$(cat ssh_script/cn.sh | grep "VERSION=" | awk -F "\"" {'print $2'})
+	local lst_upd=$(cat ssh_script/cn.sh | grep "LAST_UPDATE=" | awk -F "\"" {'print $2'})
+	color_msg 32 "[Finish]"
 
-	# Upgrade
-	cd ssh_script
-	sudo bash setup.sh
+	if [ "$ver" != "" ] && [ "$ver" != "$VERSION" ]; then
+		# Upgrade
+		cd ssh_script
+		sudo bash setup.sh
+		cd ..
+		show_version "$ver" "$lst_upd"
+	else
+		color_msg 32 "Up to date"
+	fi
 
 	# Clean up
-	cd ../..
+	cd ..
 	rm -rf $CHECKOUT_FOLDER
 	echo -e
-	color_msg 38 "Use 'cn v' to check version upgrade."
 }
 
 # Show current version
@@ -1533,8 +1555,19 @@ function show_version()
 {
 	echo -e
 	color_msg 38 "Current version: " -n
-	color_msg 33 "$VERSION" -n
-	color_msg 32 " ($LAST_UPDATE)"
+
+	if [ "$1" == "" ]; then
+		color_msg 33 "$VERSION" -n
+	else
+		color_msg 33 "$1" -n
+	fi
+
+	if [ "$2" == "" ]; then
+		color_msg 32 " ($LAST_UPDATE)"
+	else
+		color_msg 32 " ($2)"
+	fi
+
 	echo -e
 }
 
@@ -1630,7 +1663,64 @@ function list_by_tag()
 	else
 		list_sites_of_tag "$1"
 	fi
+}
 
+# Check if it is necessary to check new update
+# 0: unnecessary, 1: necessary
+function is_update_necessary()
+{
+	UPDATE_CHECK_INTERVAL=3 # number of days
+	cur_day=$(date +"%d")
+	local utility_path=$(find_this_utility)
+	ut_day=$(date -r $utility_path +"%d")
+
+	if [ $cur_day -gt $ut_day ]; then
+		diff=$(( $cur_day - $ut_day ))
+	else
+		diff=$(( $ut_day - $cur_day ))
+	fi
+
+	if [ $diff -ge $UPDATE_CHECK_INTERVAL ]; then
+		touch $utility_path
+		return 1
+	else
+		return 0
+	fi
+}
+
+# Check if there is available update. This function will be executed in
+# background.
+function check_update()
+{
+	is_update_necessary
+
+	if [ $? -eq 0 ]; then
+		return 0
+	fi
+
+	has_binary "git"
+
+	if [ $? -eq 0 ]; then
+		return 1
+	fi
+
+	# Checkout and get version
+	checkout_cn
+	local ver=$(cat ssh_script/cn.sh | grep "VERSION=" | awk -F "\"" {'print $2'})
+	local lst_upd=$(cat ssh_script/cn.sh | grep "LAST_UPDATE=" | awk -F "\"" {'print $2'})
+
+	if [ "$ver" != "" ] && [ "$ver" != "$VERSION" ]; then
+		echo -e
+		color_msg "1;5;33" "[Update available]"
+		color_msg 38 "You can do 'cn upgrade' to update"
+		echo -e
+	fi
+
+	# Clean up
+	cd ..
+	rm -rf $CHECKOUT_FOLDER &>-
+
+	return 0
 }
 
 # main()
@@ -1644,6 +1734,7 @@ else
 			echo -e
 			shift 1
 			display_sites $@
+			check_update
 			exit 0;;
 		[a] )
 			add_node "$2" "$3" "$4"
