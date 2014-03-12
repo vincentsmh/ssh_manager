@@ -1,8 +1,8 @@
 #/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.3.5" #Current version
-LAST_UPDATE="201400310_2110"
+VERSION="1.3.6" #Current version
+LAST_UPDATE="201400312_2337"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -12,6 +12,7 @@ DEFAULT_MAX_STATUS_LEN=6
 DEFAULT_MAX_FEQ_LEN=9
 DEFAULT_MAX_TAG_LEN=3
 CHECKOUT_FOLDER=".cn_upgrade"
+ENABLE_AUTO_CHECK_UPDATE=1
 
 # Color function
 # Input: $1->color, $2->message, $3->newline or not
@@ -765,6 +766,14 @@ function display_del_usage()
 	color_msg 38 "        ex: cn d 3 5 7 9"
 }
 
+function display_acu_usage()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "acu" -n
+	color_msg 38 ": cn acu " -n
+	color_msg 33 "0/1"
+	color_msg 38 "          Enable/Disalbe auto check update. 1:enable, 0: disable"
+}
 # Display the usage of 'cn' command
 function display_usage()
 {
@@ -816,7 +825,6 @@ function display_usage()
 	display_add_usage
 	display_ac_usg
 	display_del_usage
-
 	display_scp_to
 	display_scp_from
 
@@ -829,13 +837,11 @@ function display_usage()
 
 	display_usg_tag
 
-
 	color_msg 38 "   - " -n
 	color_msg 32 "pa" -n
 	color_msg 38 ": cn pa. Ping all sites to test their connectivity."
 
 	display_mu_usage
-
 	display_md_usage
 
 	color_msg 38 "   - " -n
@@ -855,10 +861,9 @@ function display_usage()
 	color_msg 38 "          Reset sites' frequency to 0."
 
 	display_move_usage
-
 	display_deploy_usage
-
 	display_cmd_usage
+	display_acu_usage
 
 	color_msg 38 "   - " -n
 	color_msg 32 "upgrade: " -n
@@ -1677,7 +1682,11 @@ function list_by_tag()
 # 0: unnecessary, 1: necessary
 function is_update_necessary()
 {
-	local UPDATE_CHECK_INTERVAL=7 # Default days for checking new version
+	if [ $ENABLE_AUTO_CHECK_UPDATE -eq 0 ]; then
+		return 0
+	fi
+
+	local UPDATE_CHECK_INTERVAL=3 # Default days for checking new version
 	local cur_day=$(date +"%d")
 	local utility_path=$(find_this_utility)
 
@@ -1738,6 +1747,40 @@ function check_update()
 	cd ..
 	rm -rf $CHECKOUT_FOLDER &> /dev/null
 	return 0
+}
+
+# Enable/Disable auto check update
+# $1=0 -> disalbe
+# $1=1 -> enable
+function switch_atckupd()
+{
+	if [ ! -z "$1" ]; then
+		local cn_path=$(find_this_utility)
+
+		if [ "$1" == "0" ]; then
+			local org=1
+			local new=0
+		elif [ "$1" == "1" ]; then
+			local org=0
+			local new=1
+		fi
+
+		ENABLE_AUTO_CHECK_UPDATE=$new
+		sed s/ENABLE_AUTO_CHECK_UPDATE=$org/ENABLE_AUTO_CHECK_UPDATE=$new/g $cn_path > tmp_cn
+		sudo mv tmp_cn $cn_path
+		sudo chmod +x $cn_path
+	fi
+
+	echo -e
+	color_msg 38 "Auto check update is " -n
+
+	if [ $ENABLE_AUTO_CHECK_UPDATE -eq 1 ]; then
+		color_msg 32 "Enabled"
+	else
+		color_msg 32 "Disabled"
+	fi
+
+	echo -e
 }
 
 # main()
@@ -1847,6 +1890,10 @@ else
 
 			add_node "$2" "$3" "$4"
 			connect_by "ssh" $?
+			exit 0;;
+		# Enable/Disalbe auto update
+		acu )
+			switch_atckupd $2
 			exit 0;;
 	esac
 

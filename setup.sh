@@ -148,6 +148,7 @@ DEPLOY_FOLDER=$(find_deploy_folder)
 SITEDATA_PATH="$HOME/conn.data"
 mkdir -p $DEPLOY_FOLDER
 sudo cp cn.sh $DEPLOY_FOLDER/cn
+sudo chmod +x $DEPLOY_FOLDER/cn
 
 if [ $? -eq 0 ]; then
 	color_msg 32 "Deploy binary successfully"
