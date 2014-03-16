@@ -1,8 +1,8 @@
 #/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.3.6" #Current version
-LAST_UPDATE="201400312_2337"
+VERSION="1.3.7" #Current version
+LAST_UPDATE="201400316_1655"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -698,6 +698,18 @@ function display_md_usage()
 
 }
 
+# Display the usage of 'mp' command
+function display_mp_usage()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "mp" -n
+	color_msg 38 ": cn mp " -n
+	color_msg 33 "#num port"
+	color_msg 38 "         Modify a site's port."
+	color_msg 38 "         ex: cn mp 3 2222"
+
+}
+
 function display_reg_usage()
 {
 	color_msg 38 "   - " -n
@@ -843,6 +855,7 @@ function display_usage()
 
 	display_mu_usage
 	display_md_usage
+	display_mp_usage
 
 	color_msg 38 "   - " -n
 	color_msg 32 "rn" -n
@@ -1202,20 +1215,6 @@ function increase_feq()
 	fi
 }
 
-# Modify a site's user@ip
-# Input: $1-> site number, $2->user@ip
-function modify_userip()
-{
-	if [ "${site_num[$1]}" != "" ] && [ "$2" != "" ]; then
-		site_userip[$1]="$2"
-		find_max_len 0 1 0 0 0
-		export_to_file
-	else
-		display_mu_usage
-		exit 0
-	fi
-}
-
 # Modify the site description of the given site
 # Input: $1-> site number, $2->description
 function modify_desc()
@@ -1226,6 +1225,35 @@ function modify_desc()
 		export_to_file
 	else
 		display_md_usage
+		exit 0
+	fi
+}
+
+# Input: $1-> type of filed , $2->site number, $3->new value
+# Parameter $1: 0->userip, 1->description, 2->port
+function modify_field()
+{
+	if [ "${site_num[$2]}" != "" ] && [ "$3" != "" ]; then
+		case "$1" in
+		[0] )
+			site_userip[$2]="$3"
+			find_max_len 0 1 0 0 0;;
+		[1] ) 
+			site_desc[$2]="$3"
+			find_max_len 0 0 0 1 0;;
+		[2] )
+			site_port[$2]="$3"
+			find_max_len 0 0 1 0 0;;
+		esac
+
+		export_to_file
+	else
+		case "$1" in
+			[0] ) display_mu_usage;;
+			[1] ) display_md_usage;;
+			[2] ) display_mp_usage;;
+		esac
+
 		exit 0
 	fi
 }
@@ -1845,11 +1873,15 @@ else
 			display_sites
 			exit 0;;
 		mu )
-			modify_userip $2 "$3"
+			modify_field 0 $2 "$3"
 			display_sites
 			exit 0;;
 		md )
-			modify_desc $2 "$3"
+			modify_field 1 $2 "$3"
+			display_sites
+			exit 0;;
+		mp )
+			modify_field 2 $2 "$3"
 			display_sites
 			exit 0;;
 		rn )
