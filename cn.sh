@@ -1,8 +1,8 @@
 #/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.3.7" #Current version
-LAST_UPDATE="201400316_1655"
+VERSION="1.3.8" #Current version
+LAST_UPDATE="201400321_0006"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -37,7 +37,6 @@ function check_n_exit()
 {
 	if [ $1 -ne 0 ]; then
 		color_msg 31 "$2"
-
 		exit $1
 	fi
 }
@@ -221,49 +220,44 @@ function find_user()
 function print_dash()
 {
 	echo -n "+"
-	for ((i=0;i<=$(($max_num_len+1));i++))
-	do
+	for ((i=0;i<=$(($max_num_len+1));i++)); do
 		echo -n "-"
 	done
+
 	echo -n "+"
 
-	for ((i=0;i<=$(($max_userip_len+1));i++))
-	do
+	for ((i=0;i<=$(($max_userip_len+1));i++)); do
 		echo -n "-"
 	done
 
 	if [ -z $1 ]; then
 		echo -n "+"
 
-		for ((i=0;i<=$(($max_port_len+1));i++))
-		do
+		for ((i=0;i<=$(($max_port_len+1));i++)); do
 			echo -n "-"
 		done
 
 		echo -n "+"
 
-		for ((i=0;i<=$(($max_desc_len+1));i++))
-		do
-			echo -n "-"
-		done
-		echo -n "+"
-
-		for ((i=0;i<=$(($max_status_len+1));i++))
-		do
+		for ((i=0;i<=$(($max_desc_len+1));i++)); do
 			echo -n "-"
 		done
 
 		echo -n "+"
 
-		for ((i=0;i<=$(($max_feq_len+1));i++))
-		do
+		for ((i=0;i<=$(($max_status_len+1));i++)); do
 			echo -n "-"
 		done
 
 		echo -n "+"
 
-		for ((i=0;i<=$(($max_tag_len+1));i++))
-		do
+		for ((i=0;i<=$(($max_feq_len+1));i++)); do
+			echo -n "-"
+		done
+
+		echo -n "+"
+
+		for ((i=0;i<=$(($max_tag_len+1));i++)); do
 			echo -n "-"
 		done
 	fi
@@ -275,8 +269,7 @@ function print_tag_dash()
 {
 	echo -n "+"
 
-	for ((i=0;i<=$(($total_len+9));i++))
-	do
+	for ((i=0;i<=$(($total_len+9));i++)); do
 		echo -n "-"
 	done
 
@@ -294,11 +287,9 @@ function print_tag_head()
 	fi
 
 	print_tag_dash
-
 	color_msg 37 "| Tag: " -n
 	color_msg_len "1;32" "$tag" $(($total_len+3)) -n
 	color_msg 37 " |"
-
 	print_dash
 }
 
@@ -373,7 +364,6 @@ function display_entry()
 function display_sites_brief()
 {
 	color=32
-
 	print_head_tail "head" "b"
 
 	for i in ${!site_num[*]}; do
@@ -392,9 +382,8 @@ function display_sites_brief()
 # Input $1,$2,...->keywords
 function display_sites()
 {
-	color=32
-
 	# Print table head
+	local color=32
 	print_head_tail "head"
 
 	if [ -z $1 ]; then
@@ -539,6 +528,7 @@ function reg_key()
 	fi
 
 	local pk=$(find_pk)
+
 	if [ "$pk" == "" ]; then
 		color_msg 31 "No public key found. Please generate your key-pair first."
 		return 1
@@ -641,7 +631,6 @@ function add_node()
 	fi
 
 	num=$(find_insert_num)
-
 	echo -e
 
 	while true; do
@@ -650,12 +639,14 @@ function add_node()
 		read -p "(y/n)" yn
 
 		case $yn in
-			[Yy]* ) add_node_to_num "$num" "$1" "$2" "$3"
-					return $num
-					;;
-			[Nn]* ) read -p "Input your number:" un
-					add_node_to_num $un "$1" "$2" "$3";;
-			* ) echo "Please answer y or a number you want to add";;
+		[Yy]* )
+			add_node_to_num "$num" "$1" "$2" "$3"
+			return $num;;
+		[Nn]* )
+			read -p "Input your number:" un
+			add_node_to_num $un "$1" "$2" "$3";;
+		* )
+			echo "Please answer y or a number you want to add";;
 		esac
 
 		if [ $? -eq 0 ]; then
@@ -683,7 +674,6 @@ function display_mu_usage()
 	color_msg 33 "#num \"user@ip\""
 	color_msg 38 "         Modify a site's user@ip"
 	color_msg 38 "         ex: cn md 3 \"vincent@127.0.0.1\""
-
 }
 
 # Display the usage of 'md' command
@@ -695,7 +685,6 @@ function display_md_usage()
 	color_msg 33 "#num \"desc\""
 	color_msg 38 "         Modify a site's description."
 	color_msg 38 "         ex: cn md 3 \"New description to site 3\""
-
 }
 
 # Display the usage of 'mp' command
@@ -707,7 +696,6 @@ function display_mp_usage()
 	color_msg 33 "#num port"
 	color_msg 38 "         Modify a site's port."
 	color_msg 38 "         ex: cn mp 3 2222"
-
 }
 
 function display_reg_usage()
@@ -786,6 +774,7 @@ function display_acu_usage()
 	color_msg 33 "0/1"
 	color_msg 38 "          Enable/Disalbe auto check update. 1:enable, 0: disable"
 }
+
 # Display the usage of 'cn' command
 function display_usage()
 {
@@ -793,10 +782,8 @@ function display_usage()
 	color_msg 38 "Usage: cn " -n
 	color_msg 32 "<commands>" -n
 	color_msg 33 " [args]"
-
 	color_msg 32 "<commands> " -n
 	color_msg 38 "are listed as follows:"
-
 	color_msg 38 "   - " -n
 	color_msg 32 "num" -n
 	color_msg 38 ": cn #num " -n
@@ -808,7 +795,6 @@ function display_usage()
 	color_msg 38 "          ex. cn 2 r 5010 (RDP to site 2 by port number 5010)"
 	color_msg 38 "          ex. cn 2 v (VNC to site 2)"
 	color_msg 38 "          ex. cn 2 v 5903 (VNC to site 2 by port number 5903)"
-
 	color_msg 38 "   - " -n
 	color_msg 32 "l" -n
 	color_msg 38 ": cn l " -n
@@ -818,12 +804,10 @@ function display_usage()
 	color_msg 38 "        ex. cn l \"CCMA\" \"10.209\"" -n
 	color_msg 34 "(List the sites contains keywords of CCMA or "
 	color_msg 34 "            10.209)"
-	
 	color_msg 38 "   - " -n
 	color_msg 32 "lb" -n
 	color_msg 38 ": cn lb"
 	color_msg 38 "         List all sites briefly (only site number and user@IP)."
-
 	color_msg 38 "   - " -n
 	color_msg 32 "lt" -n
 	color_msg 38 ": cn lt " -n
@@ -832,61 +816,48 @@ function display_usage()
 	color_msg 38 "         ex. cn lt"
 	color_msg 38 "         ex. cn lt TAG " -n
 	color_msg 34 "(list only sites which are tagged as TAG.)"
-
 	display_reg_usage
 	display_add_usage
 	display_ac_usg
 	display_del_usage
 	display_scp_to
 	display_scp_from
-
 	color_msg 38 "   - " -n
 	color_msg 32 "p" -n
 	color_msg 38 ": cn p " -n
 	color_msg 33 "#num [#num2] [#num3]"
 	color_msg 38 "        Ping site(s) to test their connectivity. "
 	color_msg 38 "        ex: cn p 3 4 5"
-
 	display_usg_tag
-
 	color_msg 38 "   - " -n
 	color_msg 32 "pa" -n
 	color_msg 38 ": cn pa. Ping all sites to test their connectivity."
-
 	display_mu_usage
 	display_md_usage
 	display_mp_usage
-
 	color_msg 38 "   - " -n
 	color_msg 32 "rn" -n
 	color_msg 38 ": reorder the number of all sites."
-
 	display_usage_sbf
-
 	color_msg 38 "   - " -n
 	color_msg 32 "doff" -n
 	color_msg 38 ": Delete all sites whose status are Off"
-
 	color_msg 38 "   - " -n
 	color_msg 32 "rst: " -n
 	color_msg 38 "cn rst " -n
 	color_msg 33 "[#num]"
 	color_msg 38 "          Reset sites' frequency to 0."
-
 	display_move_usage
 	display_deploy_usage
 	display_cmd_usage
 	display_acu_usage
-
 	color_msg 38 "   - " -n
 	color_msg 32 "upgrade: " -n
 	color_msg 38 "Upgrade cn utility to the newest version. This will checkout the "
 	color_msg 38 "              newest version from github and install it."
-
 	color_msg 38 "   - " -n
 	color_msg 32 "v: " -n
 	color_msg 38 "Show version infomation."
-
 	echo -e
 	display_author
 	echo -e
@@ -963,15 +934,49 @@ function find_max_len()
 	fi
 }
 
+# Display specific sites
+function display_spc_sites()
+{
+	local color=32
+	print_head_tail "head"
+
+	for i in $@; do
+		display_entry $color $i
+		color=$((color+1))
+
+		if [ $color -eq 38 ]; then
+			color=32
+		fi
+	done
+
+	print_head_tail "tail"
+}
+
 # Delete the given node
 function del_site()
 {
-	if [ -z "$2" ]; then
-		display_del_usage
-		exit 0
-	fi
+	# Display the sites to be removed
+	color_msg 38 "You are going to remove the following sites:"
+	display_spc_sites $@
 
-	shift 1
+	# Confirming
+	local yn=""
+
+	while :
+	do
+		color_msg 38 "Are you sure " -n
+		read -p "(y/n)" yn
+
+		case $yn in
+		[Yy]* )
+			break;;
+		[Nn]* )
+			exit 0 ;;
+		* )
+			echo "Please answer y or n";;
+		esac
+	done
+
 	local num_check=0
 	local userip_check=0
 	local port_check=0
@@ -1168,7 +1173,6 @@ function ping_site()
 	for i in $@; do
 		local ip=$(find_ip $i)
 		local wt=$(find_ping_wait_time)
-
 		ping -c 1 -W $wt $ip >> /dev/null
 
 		if [ $? -eq 0 ]; then
@@ -1187,7 +1191,6 @@ function ping_all_sites()
 {
 	local ip=""
 	local wt=$(find_ping_wait_time)
-
 	color_msg 32 "Ping all sites ..."
 	echo -e
 
@@ -1340,22 +1343,13 @@ function sort_by_feq()
 
 function del_off_site()
 {
-	local color=32
-	local yn=""
 	local del=""
 
-	color_msg 38 "You are going to remove the following sites:"
-	print_head_tail "head"
-
+	# Find off sites
 	for i in ${!site_num[*]}; do
 		if [ "${site_status[$i]}" == "Off" ]; then
 			display_entry $color $i
-			color=$((color+1))
-			del="$(echo $del) $(echo $i)"
-
-			if [ $color -eq 38 ]; then
-				color=32
-			fi
+			del="$(echo $del $i)"
 		fi
 	done
 
@@ -1365,19 +1359,7 @@ function del_off_site()
 		exit 0
 	fi
 
-	print_head_tail "tail"
-	color_msg 38 "Are you sure " -n
-	read -p "(y/n)" yn
-
-	case $yn in
-		[Yy]* )
-			for i in ${!del[*]}; do
-				del_site d $del
-			done
-			;;
-		[Nn]* ) exit 0 ;;
-		* ) echo "Please answer y or n";;
-	esac
+	del_site $del
 }
 
 # Reset site's frequency
@@ -1618,6 +1600,7 @@ function tag_site()
 {
 	if [ -z $1 ]; then
 		display_usg_tag
+		exit 0
 	fi
 
 	local tag="$1"
@@ -1763,11 +1746,9 @@ function check_update()
 				cd ssh_script
 				sudo bash setup.sh
 				cd ..
-				show_version "$new_ver" "$new_lst_upd"
-				;;
+				show_version "$new_ver" "$new_lst_upd";;
 			[Nn]* )
-				color_msg 38 "You can do 'cn upgrade' to update later"
-				;;
+				color_msg 38 "You can do 'cn upgrade' to update later";;
 		esac
 	fi
 
@@ -1829,6 +1810,12 @@ else
 			display_sites
 			exit 0;;
 		[d] )
+			if [ -z "$2" ]; then 
+				display_del_usage
+				exit 0
+			fi
+
+			shift 1
 			del_site $@
 			display_sites
 			exit 0;;
