@@ -1,12 +1,12 @@
-#/bin/bash
+#!/bin/bash
 
 DATA="$HOME/conn.data"
 VERSION="1.3.8" #Current version
-LAST_UPDATE="201400321_0006"
+LAST_UPDATE="20140502_1316"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
-DEFAULT_MAX_PORT_LEN=2
+DEFAULT_MAX_PORT_LEN=4
 DEFAULT_MAX_DESC_LEN=11
 DEFAULT_MAX_STATUS_LEN=6
 DEFAULT_MAX_FEQ_LEN=9
@@ -232,17 +232,18 @@ function print_dash()
 
 	if [ -z $1 ]; then
 		echo -n "+"
-
 		for ((i=0;i<=$(($max_port_len+1));i++)); do
 			echo -n "-"
 		done
+	fi
 
-		echo -n "+"
+	echo -n "+"
 
-		for ((i=0;i<=$(($max_desc_len+1));i++)); do
-			echo -n "-"
-		done
+	for ((i=0;i<=$(($max_desc_len+1));i++)); do
+		echo -n "-"
+	done
 
+	if [ -z $1 ]; then
 		echo -n "+"
 
 		for ((i=0;i<=$(($max_status_len+1));i++)); do
@@ -310,8 +311,12 @@ function print_head_tail()
 		if [ -z $2 ]; then
 			color_msg 37 " | " -n
 			color_msg_len 37 "Port" $max_port_len -n
-			color_msg 37 " | " -n
-			color_msg_len 37 "Description" $max_desc_len -n
+		fi
+
+		color_msg 37 " | " -n
+		color_msg_len 37 "Description" $max_desc_len -n
+
+		if [ -z $2 ]; then
 			color_msg 37 " | " -n
 			color_msg_len 37 "Status" $max_status_len -n
 			color_msg 37 " | " -n
@@ -346,8 +351,12 @@ function display_entry()
 		if [ -z $3 ]; then
 			color_msg 37 " | " -n
 			color_msg_len $1 "${site_port[$2]}" $max_port_len -n
-			color_msg 37 " | " -n
-			color_msg_len $1 "$(empty_check "${site_desc[$2]}")" $max_desc_len -n
+		fi
+
+		color_msg 37 " | " -n
+		color_msg_len $1 "$(empty_check "${site_desc[$2]}")" $max_desc_len -n
+
+		if [ -z $3 ]; then
 			color_msg 37 " | " -n
 			color_msg_len $1 "$(empty_check "${site_status[$2]}")" $max_status_len -n
 			color_msg 37 " | " -n
@@ -430,7 +439,7 @@ function display_ac_usg()
 	color_msg 32 "ac" -n
 	color_msg 38 ": cn ac " -n
 	color_msg 33 "\"user@ip\" [\"desc\"]"
-	color_msg 38 "         Add a new site and connect to it."
+	color_msg 38 "     Add a new site and connect to it."
 }
 
 function display_scp_to()
@@ -439,8 +448,8 @@ function display_scp_to()
 	color_msg 32 "ct" -n
 	color_msg 38 ": cn ct " -n
 	color_msg 33 "\"file\" #num1 [#num2] [#num3] [...]"
-	color_msg 38 "         scp a file/directory to the given site. "
-	color_msg 38 "         ex: cn ct file 3"
+	color_msg 38 "     scp a file/directory to the given site. "
+	color_msg 38 "     ex: cn ct file 3"
 }
 
 function display_scp_from()
@@ -449,8 +458,8 @@ function display_scp_from()
 	color_msg 32 "cf" -n
 	color_msg 38 ": cn cf " -n
 	color_msg 33 "\"file\" #num1 [#num2] [#num3] [...]"
-	color_msg 38 "         scp a remote file/directory of the given sites to local"
-	color_msg 38 "         ex: cn cf file 3 (=> scp user@site3_ip:file .)"
+	color_msg 38 "     scp a remote file/directory of the given sites to local"
+	color_msg 38 "     ex: cn cf file 3 (=> scp user@site3_ip:file .)"
 }
 
 # Secure copy file from the remote site.
@@ -672,8 +681,8 @@ function display_mu_usage()
 	color_msg 32 "mu" -n
 	color_msg 38 ": cn mu " -n
 	color_msg 33 "#num \"user@ip\""
-	color_msg 38 "         Modify a site's user@ip"
-	color_msg 38 "         ex: cn md 3 \"vincent@127.0.0.1\""
+	color_msg 38 "     Modify a site's user@ip"
+	color_msg 38 "     ex: cn md 3 \"vincent@127.0.0.1\""
 }
 
 # Display the usage of 'md' command
@@ -683,8 +692,8 @@ function display_md_usage()
 	color_msg 32 "md" -n
 	color_msg 38 ": cn md " -n
 	color_msg 33 "#num \"desc\""
-	color_msg 38 "         Modify a site's description."
-	color_msg 38 "         ex: cn md 3 \"New description to site 3\""
+	color_msg 38 "     Modify a site's description."
+	color_msg 38 "     ex: cn md 3 \"New description to site 3\""
 }
 
 # Display the usage of 'mp' command
@@ -694,8 +703,8 @@ function display_mp_usage()
 	color_msg 32 "mp" -n
 	color_msg 38 ": cn mp " -n
 	color_msg 33 "#num port"
-	color_msg 38 "         Modify a site's port."
-	color_msg 38 "         ex: cn mp 3 2222"
+	color_msg 38 "     Modify a site's port."
+	color_msg 38 "     ex: cn mp 3 2222"
 }
 
 function display_reg_usage()
@@ -704,10 +713,10 @@ function display_reg_usage()
 	color_msg 32 "r" -n
 	color_msg 38 ": cn r " -n
 	color_msg 33 "#num"
-	color_msg 38 "        Register public key to site #num. You would be asked to input password "
-	color_msg 38 "        for several times. After the registration, you can connect to that "
-	color_msg 38 "        site without type password."
-	color_msg 38 "        ex: cn r 3"
+	color_msg 38 "     Register public key to site #num. You would be asked to input password "
+	color_msg 38 "     for several times. After the registration, you can connect to that "
+	color_msg 38 "     site without type password."
+	color_msg 38 "     ex: cn r 3"
 }
 
 function display_deploy_usage()
@@ -716,7 +725,7 @@ function display_deploy_usage()
 	color_msg 32 "dp" -n
 	color_msg 38 ": cn dp " -n
 	color_msg 33 "#num [#num2] [#num3] ..."
-	color_msg 38 "         Deploy this utility to site(s) of #num1 (#num2, #num3, ...)."
+	color_msg 38 "     Deploy this utility to site(s) of #num1 (#num2, #num3, ...)."
 }
 
 function display_cmd_usage()
@@ -725,12 +734,12 @@ function display_cmd_usage()
 	color_msg 32 "cmd" -n
 	color_msg 38 ": cn cmd " -n
 	color_msg 33 "\"commands\" #num1 [#num2] [#num3] ..."
-	color_msg 38 "          Send commands to site(s) of #num1 (#num2, #num3, ...)."
-	color_msg 38 "          ex: cn cmd \"ls\" 2"
-	color_msg 38 "          ex: cn cmd \"cn 3\" 2 " -n
+	color_msg 38 "     Send commands to site(s) of #num1 (#num2, #num3, ...)."
+	color_msg 38 "     ex: cn cmd \"ls\" 2"
+	color_msg 38 "     ex: cn cmd \"cn 3\" 2 " -n
 	color_msg 34 "(Site 2 also installed this utility. You can "
-	color_msg 34 "              connect to site 3 through site 2. This is helpful if site 3 is "
-	color_msg 34 "              under firewall that only site 2 can connect to.)"
+	color_msg 34 "     connect to site 3 through site 2. This is helpful if site 3 is "
+	color_msg 34 "     under firewall that only site 2 can connect to.)"
 }
 
 function display_usg_tag()
@@ -739,8 +748,8 @@ function display_usg_tag()
 	color_msg 32 "t" -n
 	color_msg 38 ": cn t \"TAG_str\" " -n
 	color_msg 33 "#num1 [#num2] [#num3] [...]"
-	color_msg 38 "        Assign TAG to site(s) #num1, #num2 ... "
-	color_msg 38 "        ex: cn t \"TAG\" 3 5 6 8"
+	color_msg 38 "     Assign TAG to site(s) #num1, #num2 ... "
+	color_msg 38 "     ex: cn t \"TAG\" 3 5 6 8"
 }
 
 function display_add_usage()
@@ -749,10 +758,10 @@ function display_add_usage()
 	color_msg 32 "a" -n
 	color_msg 38 ": cn a " -n
 	color_msg 33 "\"user@ip\" [\"desc\"] [port]"
-	color_msg 38 "        Add a new site."
-	color_msg 38 "        ex: cn a user@127.0.0.1"
-	color_msg 38 "        ex: cn a user@127.0.0.1 \"Description of the site.\""
-	color_msg 38 "        ex: cn a user@127.0.0.1 \"Description of the site.\" 2222"
+	color_msg 38 "     Add a new site."
+	color_msg 38 "     ex: cn a user@127.0.0.1"
+	color_msg 38 "     ex: cn a user@127.0.0.1 \"Description of the site.\""
+	color_msg 38 "     ex: cn a user@127.0.0.1 \"Description of the site.\" 2222"
 }
 
 function display_del_usage()
@@ -761,9 +770,9 @@ function display_del_usage()
 	color_msg 32 "d" -n
 	color_msg 38 ": cn d " -n
 	color_msg 33 "#num1 [#num2] [#num3]"
-	color_msg 38 "        Delete a site (num). "
-	color_msg 38 "        ex: cn d 3"
-	color_msg 38 "        ex: cn d 3 5 7 9"
+	color_msg 38 "     Delete a site (num). "
+	color_msg 38 "     ex: cn d 3"
+	color_msg 38 "     ex: cn d 3 5 7 9"
 }
 
 function display_acu_usage()
@@ -772,7 +781,118 @@ function display_acu_usage()
 	color_msg 32 "acu" -n
 	color_msg 38 ": cn acu " -n
 	color_msg 33 "0/1"
-	color_msg 38 "          Enable/Disalbe auto check update. 1:enable, 0: disable"
+	color_msg 38 "     Enable/Disalbe auto check update. 1:enable, 0: disable"
+}
+
+function display_uninstall()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "uninstall" -n
+	color_msg 38 ":"
+	color_msg 38 "     Uninstall this utility"
+}
+
+function display_upgrade()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "upgrade: "
+	color_msg 38 "     Upgrade cn utility to the newest version. This will checkout the newest"
+	color_msg 38 "     version from github and install it."
+}
+
+function display_connect()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "num" -n
+	color_msg 38 ": cn #num " -n
+	color_msg 33 "[x|f|v|r] [port]"
+	color_msg 38 "     ex. cn 2 (SSH to site 2)"
+	color_msg 38 "     ex. cn 2 x (with X-forwarding)"
+	color_msg 38 "     ex. cn 2 f (FTP to site 2)"
+	color_msg 38 "     ex. cn 2 r (RDP to site 2)"
+	color_msg 38 "     ex. cn 2 r 5010 (RDP to site 2 by port number 5010)"
+	color_msg 38 "     ex. cn 2 v (VNC to site 2)"
+	color_msg 38 "     ex. cn 2 v 5903 (VNC to site 2 by port number 5903)"
+}
+
+function display_list()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "l" -n
+	color_msg 38 ": cn l " -n
+	color_msg 33 "[keyword1] [keyword2] [...]."
+	color_msg 38 "     List all sites or list some sites which contain the given keywords."
+	color_msg 38 "     ex. cn l (List all sites)"
+	color_msg 38 "     ex. cn l \"CCMA\" \"10.209\"" -n
+	color_msg 34 "(List the sites contains keywords of CCMA or "
+	color_msg 34 "     10.209)"
+}
+
+function display_list_tag()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "lt" -n
+	color_msg 38 ": cn lt " -n
+	color_msg 33 "[tag]"
+	color_msg 38 "     List all sites and group them by tag."
+	color_msg 38 "     ex. cn lt"
+	color_msg 38 "     ex. cn lt TAG " -n
+	color_msg 34 "(list only sites which are tagged as TAG.)"
+}
+
+function display_rst()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "rst: " -n
+	color_msg 38 "cn rst " -n
+	color_msg 33 "[#num]"
+	color_msg 38 "     Reset sites' frequency to 0."
+}
+
+function display_list_b()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "lb" -n
+	color_msg 38 ": cn lb"
+	color_msg 38 "     List all sites briefly (only site number and user@IP)."
+}
+
+function display_showversion()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "v: "
+	color_msg 38 "     Show version infomation."
+}
+
+function display_ping()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "p" -n
+	color_msg 38 ": cn p " -n
+	color_msg 33 "#num [#num2] [#num3]"
+	color_msg 38 "     Ping site(s) to test their connectivity. "
+	color_msg 38 "     ex: cn p 3 4 5"
+}
+
+function display_pingall()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "pa:"
+	color_msg 38 "     cn pa. Ping all sites to test their connectivity."
+}
+
+function display_reorder()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "rn" -n
+	color_msg 38 ": reorder the number of all sites."
+}
+
+function display_doff()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "doff:"
+	color_msg 38 "     Delete all sites whose status are Off"
 }
 
 # Display the usage of 'cn' command
@@ -784,80 +904,59 @@ function display_usage()
 	color_msg 33 " [args]"
 	color_msg 32 "<commands> " -n
 	color_msg 38 "are listed as follows:"
-	color_msg 38 "   - " -n
-	color_msg 32 "num" -n
-	color_msg 38 ": cn #num " -n
-	color_msg 33 "[x|f|v|r] [port]"
-	color_msg 38 "          ex. cn 2 (SSH to site 2)"
-	color_msg 38 "          ex. cn 2 x (with X-forwarding)"
-	color_msg 38 "          ex. cn 2 f (FTP to site 2)"
-	color_msg 38 "          ex. cn 2 r (RDP to site 2)"
-	color_msg 38 "          ex. cn 2 r 5010 (RDP to site 2 by port number 5010)"
-	color_msg 38 "          ex. cn 2 v (VNC to site 2)"
-	color_msg 38 "          ex. cn 2 v 5903 (VNC to site 2 by port number 5903)"
-	color_msg 38 "   - " -n
-	color_msg 32 "l" -n
-	color_msg 38 ": cn l " -n
-	color_msg 33 "[keyword1] [keyword2] [...]."
-	color_msg 38 "        List all sites or list some sites which contain the given keywords."
-	color_msg 38 "        ex. cn l (List all sites)"
-	color_msg 38 "        ex. cn l \"CCMA\" \"10.209\"" -n
-	color_msg 34 "(List the sites contains keywords of CCMA or "
-	color_msg 34 "            10.209)"
-	color_msg 38 "   - " -n
-	color_msg 32 "lb" -n
-	color_msg 38 ": cn lb"
-	color_msg 38 "         List all sites briefly (only site number and user@IP)."
-	color_msg 38 "   - " -n
-	color_msg 32 "lt" -n
-	color_msg 38 ": cn lt " -n
-	color_msg 33 "[tag]"
-	color_msg 38 "         List all sites and group them by tag."
-	color_msg 38 "         ex. cn lt"
-	color_msg 38 "         ex. cn lt TAG " -n
-	color_msg 34 "(list only sites which are tagged as TAG.)"
+	display_connect
+	echo -e
+	display_list
+	echo -e
+	display_list_b
+	echo -e
+	display_list_tag
+	echo -e
 	display_reg_usage
+	echo -e
 	display_add_usage
+	echo -e
 	display_ac_usg
+	echo -e
 	display_del_usage
+	echo -e
 	display_scp_to
+	echo -e
 	display_scp_from
-	color_msg 38 "   - " -n
-	color_msg 32 "p" -n
-	color_msg 38 ": cn p " -n
-	color_msg 33 "#num [#num2] [#num3]"
-	color_msg 38 "        Ping site(s) to test their connectivity. "
-	color_msg 38 "        ex: cn p 3 4 5"
+	echo -e
+	display_ping
+	echo -e
 	display_usg_tag
-	color_msg 38 "   - " -n
-	color_msg 32 "pa" -n
-	color_msg 38 ": cn pa. Ping all sites to test their connectivity."
+	echo -e
+	display_pingall
+	echo -e
 	display_mu_usage
+	echo -e
 	display_md_usage
+	echo -e
 	display_mp_usage
-	color_msg 38 "   - " -n
-	color_msg 32 "rn" -n
-	color_msg 38 ": reorder the number of all sites."
+	echo -e
+	display_reorder
+	echo -e
 	display_usage_sbf
-	color_msg 38 "   - " -n
-	color_msg 32 "doff" -n
-	color_msg 38 ": Delete all sites whose status are Off"
-	color_msg 38 "   - " -n
-	color_msg 32 "rst: " -n
-	color_msg 38 "cn rst " -n
-	color_msg 33 "[#num]"
-	color_msg 38 "          Reset sites' frequency to 0."
+	echo -e
+	display_doff
+	echo -e
+	display_rst
+	echo -e
 	display_move_usage
+	echo -e
 	display_deploy_usage
+	echo -e
 	display_cmd_usage
+	echo -e
 	display_acu_usage
-	color_msg 38 "   - " -n
-	color_msg 32 "upgrade: " -n
-	color_msg 38 "Upgrade cn utility to the newest version. This will checkout the "
-	color_msg 38 "              newest version from github and install it."
-	color_msg 38 "   - " -n
-	color_msg 32 "v: " -n
-	color_msg 38 "Show version infomation."
+	echo -e
+	display_upgrade
+	echo -e
+	display_uninstall
+	echo -e
+	display_showversion
 	echo -e
 	display_author
 	echo -e
@@ -1068,8 +1167,8 @@ function display_move_usage()
 	color_msg 32 "m" -n
 	color_msg 38 ": cn m " -n
 	color_msg 33 "#num1 #num2"
-	color_msg 38 "        Move site #num1 to #num2"
-	color_msg 38 "        ex: cn m 10 3"
+	color_msg 38 "     Move site #num1 to #num2"
+	color_msg 38 "     ex: cn m 10 3"
 }
 
 function assign_entry_data()
@@ -1304,7 +1403,7 @@ function display_usage_sbf()
 {
 	color_msg 38 "   - " -n
 	color_msg 32 "sf: cn sf [D|I]"
-	color_msg 38 "         Sort sites by the frequency. D: decreasing, I: increasing"
+	color_msg 38 "     Sort sites by the frequency. D: decreasing, I: increasing"
 }
 
 # Sort by frequency
@@ -1793,6 +1892,8 @@ function switch_atckupd()
 }
 
 # main()
+echo gogogo
+
 if [ -z "$1" ]; then
 	display_usage
 else
