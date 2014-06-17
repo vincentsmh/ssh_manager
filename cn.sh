@@ -2,7 +2,7 @@
 
 DATA="$HOME/conn.data"
 VERSION="1.3.8" #Current version
-LAST_UPDATE="20140502_1316"
+LAST_UPDATE="20140617_0942"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -1517,6 +1517,8 @@ function connect_by()
 		return 1
 	fi
 
+	increase_feq $1
+
 	# SSH
 	if [ "$1" == "ssh" ]; then
 		# With X-Forwarding
@@ -1892,8 +1894,6 @@ function switch_atckupd()
 }
 
 # main()
-echo gogogo
-
 if [ -z "$1" ]; then
 	display_usage
 else
@@ -2022,8 +2022,6 @@ else
 	if [ $? -eq 0 ]; then
 		color_msg 32 "[$1] does not exist"
 	else
-		increase_feq $1
-
 		if [ -z "$2" ]; then
 			connect_by "ssh" $1
 			exit $?
