@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 
 DATA="$HOME/conn.data"
 DEFAULT_SSH_PORT=22
@@ -70,6 +70,14 @@ function update_port_max()
 {
 	if [ $1 -gt $max_port_len ]; then
 		max_port_len=$1
+	fi
+}
+
+function check_n_exit()
+{
+	if [ $1 -ne 0 ]; then
+		color_msg 31 "$2"
+		exit $1
 	fi
 }
 
@@ -148,14 +156,9 @@ DEPLOY_FOLDER=$(find_deploy_folder)
 SITEDATA_PATH="$HOME/conn.data"
 mkdir -p $DEPLOY_FOLDER
 sudo cp cn.sh $DEPLOY_FOLDER/cn
-sudo chmod +x $DEPLOY_FOLDER/cn
-
-if [ $? -eq 0 ]; then
-	color_msg 32 "Deploy binary successfully"
-else
-	color_msg 31 "Deploy binary failed"
-	exit 1
-fi
+sudo chmod 755 $DEPLOY_FOLDER/cn
+check_n_exit $? "Deploy binary failed"
+color_msg 32 "Deploy binary successfully"
 
 ## Deploy site data
 if [ -f $SITEDATA_PATH ]; then
@@ -170,7 +173,7 @@ if [ -f $SITEDATA_PATH ]; then
 		color_msg 32 "successfully"
 	fi
 else
-	su $SUDO_USER -c "touch $SITEDATA_PATH"
+	touch $SITEDATA_PATH
+	check_n_exit $? "Fail to deploy user data"
+	color_msg 32 "Deploy user data successfully"
 fi
-
-color_msg 32 "Deploy deploy successfully"
