@@ -1,8 +1,8 @@
 #!/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.3.8" #Current version
-LAST_UPDATE="20140617_0942"
+VERSION="1.3.9" #Current version
+LAST_UPDATE="20141115_1811"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -895,6 +895,15 @@ function display_doff()
 	color_msg 38 "     Delete all sites whose status are Off"
 }
 
+function display_cssh_usage()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "cssh:" -n
+  color_msg 38 " cn cssh " -n
+  color_msg 33 "#num1 #num2 ..."
+	color_msg 38 "     Conncet to the given nodes by using 'çssh' command."
+}
+
 # Display the usage of 'cn' command
 function display_usage()
 {
@@ -923,6 +932,8 @@ function display_usage()
 	display_scp_to
 	echo -e
 	display_scp_from
+	echo -e
+	display_cssh_usage
 	echo -e
 	display_ping
 	echo -e
@@ -1893,6 +1904,56 @@ function switch_atckupd()
 	echo -e
 }
 
+# is_integer(n) -> 0 | 1
+# Check if the given parameter 'n' is an integer.
+#   0: non-integer
+#   1: integer
+function is_integer()
+{
+  int_re='^[0-9]+$'
+  if ! [[ $1 =~ $int_re ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+# cssh_sites( $site_num1, $site_num2, ...) -> 0 | 1
+# Use clusterssh to connect multiplee sites simultaneously.
+function cssh_sites()
+{
+  if [ -z $1 ]; then
+    color_msg 31 "No site given"
+    return 1
+  fi
+
+  local cssh_str=""
+
+  for num in "$@"; do
+    is_integer $num
+
+    if [ $? -ne 1 ]; then
+      return 1
+    fi
+
+    cssh_str="$cssh_str $site_userip[$num]"
+  done
+
+  color_msg 32 "Connecting to multiple nodes: " -n
+  color_msg 34 $cssh_str
+  cssh $cssh_str
+
+  if [ $? -ne 0 ]; then
+    color_msg 31 "Connection fail"
+    color_msg 38 "Please check if you have " -n
+    color_msg 32 "clusterssh installed properly."
+
+    return 1
+  fi
+
+  return 0
+}
+
 # main()
 if [ -z "$1" ]; then
 	display_usage
@@ -2015,6 +2076,10 @@ else
 		acu )
 			switch_atckupd $2
 			exit 0;;
+    cssh )
+      shift 1
+      cssh_sites "$@"
+      exit 0;;
 	esac
 
 	is_site_exist $1
