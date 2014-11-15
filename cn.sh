@@ -123,6 +123,7 @@ function read_sites()
 	max_status_len=$DEFAULT_MAX_STATUS_LEN
 	max_feq_len=$DEFAULT_MAX_FEQ_LEN
 	max_tag_len=$DEFAULT_MAX_TAG_LEN
+  lst_ckday=$(date +"%d")
 	total_len=0
 	unset_site
 
@@ -154,10 +155,6 @@ function read_sites()
 			max_feq_len=$( echo ${array[5]} | bc )
 			max_tag_len=$( echo ${array[6]} | bc )
 			lst_ckday=$( echo ${array[7]} | bc )
-
-			if [ "$lst_ckday" == "" ]; then
-				lst_ckday=$(date +"%d")
-			fi
 
 			check_max_len
 			read_max=1
