@@ -2,7 +2,7 @@
 
 DATA="$HOME/conn.data"
 VERSION="1.3.9" #Current version
-LAST_UPDATE="20141115_1811"
+LAST_UPDATE="20141119_1359"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -523,9 +523,9 @@ function find_pk()
 	fi
 }
 
-# This function will regiester local's public key (id_rsa.pub) to the remote
-# site.
-# Input: $1->site number
+# reg_key(site_number1, site_number2, ...) -> 0 | 1
+#   This function will regiester local's public key (id_rsa.pub) to the remote
+#   site.
 function reg_key()
 {
 	if [ -z $1 ]; then
@@ -540,29 +540,34 @@ function reg_key()
 		return 1
 	fi
 
-	local ip=$(find_ip $1)
-	check_n_exit $? "[$1] does not exist."
+  local sn=""
+  for sn in $@; do
+    local ip=$(find_ip $sn)
+    check_n_exit $? "[$sn] does not exist."
 
-	# Copy local public key to the remote site.
-	echo -e
-	color_msg 32 "Copying local public key to [" -n
-	color_msg 33 "$ip" -n
-	color_msg 32 "] ..."
-	scp_to "$pk" "$1"
-	check_n_exit $? "Copy file to site [$1] failed."
+    # Copy local public key to the remote site.
+    echo -e
+    color_msg 38 "Copying local public key to [" -n
+    color_msg 32 "$ip" -n
+    color_msg 38 "] ..."
+    scp_to "$pk" "$sn"
+    check_n_exit $? "Copy file to $ip failed."
 
-	# Cat public key to remote site's authorized_key
-	echo -e
-	color_msg 32 "Registering public key to [" -n
-	color_msg 33 "$ip" -n
-	color_msg 32 "] ..."
+    # Cat public key to remote site's authorized_key
+    echo -e
+    color_msg 38 "Registering public key to [" -n
+    color_msg 32 "$ip" -n
+    color_msg 38 "] ..."
 
-	local cmd="mkdir -p ~/.ssh; cat id_rsa.pub >> ~/.ssh/authorized_keys; rm -rf id_rsa.pub"
-	ssh -p ${site_port[$1]} ${site_userip[$1]} "$cmd"
-	check_n_exit $? "Register public key failed"
+    local cmd="mkdir -p ~/.ssh; cat id_rsa.pub >> ~/.ssh/authorized_keys; rm -rf id_rsa.pub"
+    ssh -p ${site_port[$sn]} ${site_userip[$sn]} "$cmd"
+    check_n_exit $? "Register public key failed"
 
-	echo -e
-	color_msg 32 "Register public key to $ip successfully."
+    echo -e
+    color_msg 38 "Register public key to " -n
+    color_msg 32 "$ip " -n
+    color_msg 38 "successfully."
+  done
 }
 
 # Check if the give site is connectable.
@@ -1979,7 +1984,8 @@ else
 			display_sites
 			exit 0;;
 		[r] )
-			reg_key $2
+      shift 1
+			reg_key $@
 			exit 0;;
 		[m] )
 			move_function $2 $3 $2
