@@ -1,8 +1,8 @@
 #!/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.3.9" #Current version
-LAST_UPDATE="20141119_1359"
+VERSION="1.3.10" #Current version
+LAST_UPDATE="20141202_1451"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -576,10 +576,10 @@ function is_reachable()
 {
 	ping_site $1
 
-	if [ "${site_status[$1]}" == "On" ]; then
-		return 1
-	else
+  if [ $(echo "${site_status[$1]}" | grep -c On) == "0" ]; then
 		return 0
+	else
+		return 1
 	fi
 }
 
@@ -953,6 +953,8 @@ function display_usage()
 	echo -e
 	display_usage_sbf
 	echo -e
+  display_usage_sp
+	echo -e
 	display_doff
 	echo -e
 	display_rst
@@ -981,6 +983,7 @@ function display_usage()
 #        $3->1 to find the maximum port string length
 #        $4->1 to find maximum description string length
 #        $5->1 to find maximum tag string length
+#        $6->1 to find maximum status string length
 function find_max_len()
 {
 	local len=0
@@ -1021,7 +1024,7 @@ function find_max_len()
 		done
 	fi
 
-	if [ $3 -eq 1 ];then
+	if [ $4 -eq 1 ];then
 		max_desc_len=0
 
 		for i in ${!site_desc[*]}; do
@@ -1033,7 +1036,7 @@ function find_max_len()
 		done
 	fi
 
-	if [ $4 -eq 1 ]; then
+	if [ $5 -eq 1 ]; then
 		max_tag_len=0
 
 		for i in ${!site_tag[*]}; do
@@ -1044,6 +1047,18 @@ function find_max_len()
 			fi
 		done
 	fi
+
+  if [ $6 -eq 1 ]; then
+		max_status_len=0
+
+		for i in ${!site_status[*]}; do
+			len=$(strlen "${site_status[$i]}")
+
+			if [ $len -gt $max_status_len ]; then
+				max_status_len=$len
+			fi
+		done
+  fi
 }
 
 # Display specific sites
@@ -1279,6 +1294,30 @@ function find_ping_wait_time()
 	fi
 }
 
+# change_site_status( $site_num, $status_type, $status )
+function change_site_status()
+{
+  local num="$1"
+  local status_type="$2"
+  local status="$3"
+  local cur_ping_status=$(echo "${site_status[$num]}" | awk -F "ping:" {'print $2'} | awk -F "," {'print $1'})
+  local cur_ssh_status=$(echo "${site_status[$num]}" | awk -F "ssh:" {'print $2'})
+
+  if [ "${status_type}" == "ping" ]; then
+    if [ "${cur_ssh_status}" == "" ]; then
+      site_status[${num}]="ping:${status}"
+    else
+      site_status[${num}]="ping:${status},ssh:${cur_ssh_status}"
+    fi
+  elif [ "${status_type}" == "ssh" ]; then
+    if [ "${cur_ping_status}" == "" ]; then
+      site_status[${num}]="ssh:${status}"
+    else
+      site_status[${num}]="ping:${cur_ping_status},ssh:${status}"
+    fi
+  fi
+}
+
 # Ping the given sites to test if the it is reachable.
 function ping_site()
 {
@@ -1288,9 +1327,9 @@ function ping_site()
 		ping -c 1 -W $wt $ip >> /dev/null
 
 		if [ $? -eq 0 ]; then
-			site_status[$i]="On"
+      change_site_status $i "ping" "On"
 		else
-			site_status[$i]="Off"
+      change_site_status $i "ping" "Off"
 		fi
 	done
 
@@ -1311,9 +1350,9 @@ function ping_all_sites()
 		ping -c 1 -W $wt $ip >> /dev/null
 
 		if [ $? -eq 0 ]; then
-			site_status[$i]="On"
+      change_site_status $i "ping" "On"
 		else
-			site_status[$i]="Off"
+      change_site_status $i "ping" "Off"
 		fi
 	done
 
@@ -1417,6 +1456,15 @@ function display_usage_sbf()
 	color_msg 38 "   - " -n
 	color_msg 32 "sf: cn sf [D|I]"
 	color_msg 38 "     Sort sites by the frequency. D: decreasing, I: increasing"
+}
+
+function display_usage_sp()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "sp" -n
+  color_msg 38 ": cn sp " -n
+  color_msg 33 "NUM1 [NUM2] [...]"
+	color_msg 38 "     SSH ping. Check if the node's SSH connection is available"
 }
 
 # Sort by frequency
@@ -1956,6 +2004,29 @@ function cssh_sites()
   return 0
 }
 
+# ssh_ping( $site_num1, $site_num2, ...)
+# Check if the given sites' SSH connection are alive
+function ssh_ping()
+{
+  if [ -z $1 ]; then
+    display_usage_sp
+    exit 0
+  fi
+
+  for num in "$@"; do
+    ssh -q ${site_userip[$num]} exit
+
+    if [ $? -eq 0 ]; then
+      change_site_status "${num}" "ssh" "On"
+    else
+      change_site_status "${num}" "ssh" "Off"
+    fi
+  done
+
+  find_max_len 0 0 0 0 0 1
+  export_to_file
+}
+
 # main()
 if [ -z "$1" ]; then
 	display_usage
@@ -1963,12 +2034,6 @@ else
 	read_sites
 
 	case "$1" in
-		[l] )
-			echo -e
-			shift 1
-			display_sites $@
-			check_update
-			exit 0;;
 		[a] )
 			add_node "$2" "$3" "$4"
 			display_sites
@@ -1983,9 +2048,11 @@ else
 			del_site $@
 			display_sites
 			exit 0;;
-		[r] )
-      shift 1
-			reg_key $@
+		[l] )
+			echo -e
+			shift 1
+			display_sites $@
+			check_update
 			exit 0;;
 		[m] )
 			move_function $2 $3 $2
@@ -1997,74 +2064,16 @@ else
 			ping_site $@
 			display_sites
 			exit 0;;
-		[v] )
-			show_version
+		[r] )
+      shift 1
+			reg_key $@
 			exit 0;;
 		[t] )
 			shift 1
 			tag_site "$@"
 			exit 0;;
-		lb )
-			shift 1
-			display_sites_brief
-			exit 0;;
-		lt )
-			shift 1
-			list_by_tag "$@"
-			exit 0;;
-		ct )
-			shift 1
-			scp_to "$@"
-			exit 0;;
-		cf )
-			shift 1
-			scp_from "$@"
-			exit 0;;
-		pa )
-			ping_all_sites
-			display_sites
-			exit 0;;
-		mu )
-			modify_field 0 $2 "$3"
-			display_sites
-			exit 0;;
-		md )
-			modify_field 1 $2 "$3"
-			display_sites
-			exit 0;;
-		mp )
-			modify_field 2 $2 "$3"
-			display_sites
-			exit 0;;
-		rn )
-			renumber_sites
-			display_sites
-			exit 0;;
-		sf )
-			sort_by_feq "$2"
-			display_sites
-			exit 0;;
-		rst )
-			reset_feq $@
-			display_sites
-			exit 0;;
-		doff )
-			del_off_site
-			display_sites
-			exit 0;;
-		uninstall )
-			uninstall
-			exit 0;;
-		dp )
-			shift 1
-			deploy_to $@
-			exit 0;;
-		cmd )
-			shift 1
-			cmd_to "$@"
-			exit 0;;
-		upgrade )
-			do_upgrade
+		[v] )
+			show_version
 			exit 0;;
 		ac )
 			if [ -z $2 ]; then
@@ -2079,10 +2088,77 @@ else
 		acu )
 			switch_atckupd $2
 			exit 0;;
+		cf )
+			shift 1
+			scp_from "$@"
+			exit 0;;
+		cmd )
+			shift 1
+			cmd_to "$@"
+			exit 0;;
+		ct )
+			shift 1
+			scp_to "$@"
+			exit 0;;
     cssh )
       shift 1
       cssh_sites "$@"
       exit 0;;
+		doff )
+			del_off_site
+			display_sites
+			exit 0;;
+		dp )
+			shift 1
+			deploy_to $@
+			exit 0;;
+		lb )
+			shift 1
+			display_sites_brief
+			exit 0;;
+		lt )
+			shift 1
+			list_by_tag "$@"
+			exit 0;;
+		mu )
+			modify_field 0 $2 "$3"
+			display_sites
+			exit 0;;
+		md )
+			modify_field 1 $2 "$3"
+			display_sites
+			exit 0;;
+		mp )
+			modify_field 2 $2 "$3"
+			display_sites
+			exit 0;;
+		pa )
+			ping_all_sites
+			display_sites
+			exit 0;;
+		rn )
+			renumber_sites
+			display_sites
+			exit 0;;
+		sf )
+			sort_by_feq "$2"
+			display_sites
+			exit 0;;
+    sp )
+      shift 1
+      ssh_ping "$@"
+			display_sites
+      exit 0;;
+		rst )
+			reset_feq $@
+			display_sites
+			exit 0;;
+		uninstall )
+			uninstall
+			exit 0;;
+		upgrade )
+			do_upgrade
+			exit 0;;
 	esac
 
 	is_site_exist $1
