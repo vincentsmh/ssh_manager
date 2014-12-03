@@ -955,6 +955,8 @@ function display_usage()
 	echo -e
   display_usage_sp
 	echo -e
+  display_usage_spa
+	echo -e
 	display_doff
 	echo -e
 	display_rst
@@ -1318,6 +1320,7 @@ function change_site_status()
   fi
 }
 
+# ping_site( $num1, $num2, ... )
 # Ping the given sites to test if the it is reachable.
 function ping_site()
 {
@@ -1333,29 +1336,23 @@ function ping_site()
 		fi
 	done
 
+  find_max_len 0 0 0 0 0 1
 	export_to_file
 	return 0
 }
 
+# ping_all_sites()
 # Ping all site to check their connectivity
 function ping_all_sites()
 {
-	local ip=""
-	local wt=$(find_ping_wait_time)
 	color_msg 32 "Ping all sites ..."
-	echo -e
+  local all_nodes=""
 
 	for i in ${!site_num[*]}; do
-		ip=$(find_ip $i)
-		ping -c 1 -W $wt $ip >> /dev/null
-
-		if [ $? -eq 0 ]; then
-      change_site_status $i "ping" "On"
-		else
-      change_site_status $i "ping" "Off"
-		fi
+    all_nodes="${all_nodes} $i"
 	done
 
+  ping_site ${all_nodes}
 	export_to_file
 }
 
@@ -1465,6 +1462,15 @@ function display_usage_sp()
   color_msg 38 ": cn sp " -n
   color_msg 33 "NUM1 [NUM2] [...]"
 	color_msg 38 "     SSH ping. Check if the node's SSH connection is available"
+}
+
+function display_usage_spa()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "spa" -n
+  color_msg 38 ": cn spa "
+	color_msg 38 "     SSH ping all sites. Note that, if you didn't register your public key to that"
+  color_msg 38 "     site, you will be asked for password."
 }
 
 # Sort by frequency
@@ -2027,6 +2033,19 @@ function ssh_ping()
   export_to_file
 }
 
+# ssh_ping_all()
+# Check all nodes' SSH connection
+function ssh_ping_all()
+{
+  local all_nodes=""
+
+  for num in ${!site_num[*]}; do
+    all_nodes="${all_nodes} ${num}"
+  done
+
+  ssh_ping ${all_nodes}
+}
+
 # main()
 if [ -z "$1" ]; then
 	display_usage
@@ -2147,6 +2166,11 @@ else
     sp )
       shift 1
       ssh_ping "$@"
+			display_sites
+      exit 0;;
+    spa )
+      shift 1
+      ssh_ping_all
 			display_sites
       exit 0;;
 		rst )
