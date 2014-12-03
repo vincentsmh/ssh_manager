@@ -1584,7 +1584,7 @@ function connect_by()
 		return 1
 	fi
 
-	increase_feq $1
+	increase_feq $2
 
 	# SSH
 	if [ "$1" == "ssh" ]; then
