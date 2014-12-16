@@ -2,7 +2,7 @@
 
 DATA="$HOME/conn.data"
 VERSION="1.3.10" #Current version
-LAST_UPDATE="20141202_1451"
+LAST_UPDATE="20141216_1112"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -1724,13 +1724,15 @@ function do_upgrade()
 	color_msg 38 "Checking new version and doing upgrade ... " -n
 	checkout_cn
 
-	if [ "$new_ver" != "" ] && [ "$new_ver" != "$VERSION" ]; then
-		color_msg 32 "Updating ... "
-		# Upgrade
-		cd ssh_script
-		sudo bash setup.sh
-		cd ..
-		show_version "$new_ver" "$new_lst_upd"
+	if [ "$new_ver" != "" ] || [ "$new_lst_upd" != "" ]; then
+    if [ "$new_ver" != "$VERSION" ] || [ "$new_lst_upd" != "$LAST_UPDATE" ]; then
+      color_msg 32 "Updating ... "
+      # Upgrade
+      cd ssh_script
+      sudo bash setup.sh
+      cd ..
+      show_version "$new_ver" "$new_lst_upd"
+    fi
 	else
 		color_msg 32 "Up to date"
 	fi
@@ -1992,17 +1994,19 @@ function cssh_sites()
       return 1
     fi
 
-    cssh_str="$cssh_str $site_userip[$num]"
+    cssh_str="$cssh_str ${site_userip[$num]}"
   done
 
   color_msg 32 "Connecting to multiple nodes: " -n
   color_msg 34 $cssh_str
+
   cssh $cssh_str
 
   if [ $? -ne 0 ]; then
     color_msg 31 "Connection fail"
     color_msg 38 "Please check if you have " -n
-    color_msg 32 "clusterssh installed properly."
+    color_msg 32 "clusterssh " -n
+    color_msg 38 "installed properly."
 
     return 1
   fi
