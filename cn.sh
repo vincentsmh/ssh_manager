@@ -1868,7 +1868,7 @@ function is_update_necessary()
 	fi
 
 	local UPDATE_CHECK_INTERVAL=3 # Default days for checking new version
-	local cur_day=$(date +"%d")
+	local cur_day=$(date +"%-d")
 	local utility_path=$(find_this_utility)
 
 	if [ $cur_day -gt $lst_ckday ]; then
