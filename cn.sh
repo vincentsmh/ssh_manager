@@ -1,8 +1,8 @@
 #!/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.3.10" #Current version
-LAST_UPDATE="20141216_1112"
+VERSION="1.3.11" #Current version
+LAST_UPDATE="20150110_1524"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -363,6 +363,17 @@ function display_entry()
 		fi
 
 		color_msg 37 " |"
+}
+
+function display_usage_rvt()
+{
+	color_msg 38 "   - " -n
+	color_msg 32 "rvt" -n
+	color_msg 38 ": cn rvt " -n
+	color_msg 33 "REVERSE_PORT SITE_NUM1 [SITE_NUM2] [...]"
+	color_msg 38 "     Create a reverse tunnel to SITE_NUMBER where the remote user can login this "
+  color_msg 38 "     machine by: ssh -p REVERSE_PORT USER@localhost."
+
 }
 
 # Display all of the remote sites briefly.
@@ -958,6 +969,8 @@ function display_usage()
   display_usage_spa
 	echo -e
 	display_doff
+	echo -e
+	display_usage_rvt
 	echo -e
 	display_rst
 	echo -e
@@ -2014,6 +2027,26 @@ function cssh_sites()
   return 0
 }
 
+# reverse_tunnal( $reverse_port, $site_num1, $site_num2, ... )
+# Create a reverse tunnel to the given site
+# The user on remote can SSH into this machine by:
+#   ssh -p $reverse_port USER@localhost
+function reverse_tunnel()
+{
+  if [ -z $1 ]; then
+    display_usage_rvt
+    exit 1
+  else
+    local reverse_port=$1
+    shift 1
+  fi
+
+  for num in $@; do
+    ssh -NfR ${reverse_port}:localhost:${site_port[$num]} \
+      ${site_userip[$num]}
+  done
+}
+
 # ssh_ping( $site_num1, $site_num2, ...)
 # Check if the given sites' SSH connection are alive
 function ssh_ping()
@@ -2159,6 +2192,10 @@ else
 			ping_all_sites
 			display_sites
 			exit 0;;
+    rvt )
+      shift 1
+      reverse_tunnel $@
+      exit 0;;
 		rn )
 			renumber_sites
 			display_sites
