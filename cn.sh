@@ -1795,7 +1795,7 @@ function tag_site()
 		site_tag[$i]="$tag"
 	done
 
-	find_max_len 0 0 0 1
+	find_max_len 0 0 0 1 1 0
 
 	if [ $max_tag_len -lt 3 ]; then
 		max_tag_len=3
