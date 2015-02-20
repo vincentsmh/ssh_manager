@@ -1,8 +1,8 @@
 #!/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.3.11" #Current version
-LAST_UPDATE="20150110_1524"
+VERSION="1.3.12" #Current version
+LAST_UPDATE="20150220_1531"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -1590,13 +1590,6 @@ function df_port()
 # Input: $1->utility name, $2->site number, $3->Port|x, $4->options
 function connect_by()
 {
-	is_reachable $2
-
-	if [ $? == 0 ]; then
-		color_msg 31 "Site [$2] is not reachable."
-		return 1
-	fi
-
 	increase_feq $2
 
 	# SSH
@@ -2170,6 +2163,7 @@ else
 			exit 0;;
 		lb )
 			shift 1
+      # TODO: add keyword search for brief listing
 			display_sites_brief
 			exit 0;;
 		lt )
