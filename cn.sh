@@ -72,7 +72,7 @@ function ask_question()
       echo -e
     else
       read -p "$1" ans
-      if [ ! -z ${option} ]; then ans=${ans:-${options}}; fi
+      if [ ! -z ${option} ]; then ans=${ans:-${option}}; fi
     fi
 
     if [ "${ans}" != "" ]; then break; else echo -e "Cannot be empty"; fi
