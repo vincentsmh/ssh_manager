@@ -1,8 +1,8 @@
 #!/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.3.12" #Current version
-LAST_UPDATE="20150220_1531"
+VERSION="1.4.0" #Current version
+LAST_UPDATE="20150222_1142"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -376,68 +376,48 @@ function display_usage_rvt()
 
 }
 
-# Display all of the remote sites briefly.
-# Input $1,$2,...->keywords
-function display_sites_brief()
+# Display all of the remote sites defined in conn.data
+# Input $1: display mode
+#       $2, $3, ...: keywords
+function display_sites()
 {
-	color=32
-	print_head_tail "head" "b"
+  if [ "$1" == "brief" ]; then
+    local display_mode="b"
+  else
+    local display_mode=""
+  fi
+
+	local color=32
+	print_head_tail "head" "${display_mode}"
 
 	for i in ${!site_num[*]}; do
-		display_entry $color $i "b"
-		color=$((color+1))
+    # Keyword searching
+    if [ ! -z $1 ]; then
+      local keyword_found=0
+
+      for keyword in $@; do
+        local exists_userip=$(echo "${site_userip[$i]}" | grep -c "${keyword}")
+        local exists_desc=$(echo "${site_desc[$i]}" | grep -c "${keyword}")
+
+        if [ "${exists_userip}" != "0" ] || [ "${exists_desc}" != "0" ]; then
+          local keyword_found=$(( ${keyword_found} + 1 ))
+        fi
+      done
+
+      if [ ${keyword_found} -eq 0 ]; then
+        continue
+      fi
+    fi
+
+		display_entry $color $i "${display_mode}"
+		local color=$((color+1))
 
 		if [ $color -eq 38 ]; then
-			color=32
+			local color=32
 		fi
 	done
 
-	print_head_tail "tail" "b"
-	echo -e
-}
-# Display all of the remote sites defined in conn.data
-# Input $1,$2,...->keywords
-function display_sites()
-{
-	# Print table head
-	local color=32
-	print_head_tail "head"
-
-	if [ -z $1 ]; then
-		# Display all site entries
-		for i in ${!site_num[*]}; do
-			display_entry $color $i
-			color=$((color+1))
-
-			if [ $color -eq 38 ]; then
-				color=32
-			fi
-		done
-	else
-		# Display only the sites which contain the given keyword.
-		local kw_exist_userip=0
-		local kw_exist_desc=0
-
-		for i in ${!site_num[*]}; do
-			for kw in $@; do
-				kw_exist_userip=$(echo "${site_userip[$i]}" | grep -c "$kw")
-				kw_exist_desc=$(echo "${site_desc[$i]}" | grep -c "$kw")
-
-				if [ "$kw_exist_userip" != "0" ] || [ "$kw_exist_desc" != 0 ]; then
-					display_entry $color $i
-					color=$((color+1))
-
-					if [ $color -eq 38 ]; then
-						color=32
-					fi
-
-					break
-				fi
-			done # for kw
-		done # for i
-	fi
-
-	print_head_tail "tail"
+	print_head_tail "tail" "${display_mode}"
 	echo -e
 }
 
@@ -2164,7 +2144,7 @@ else
 		lb )
 			shift 1
       # TODO: add keyword search for brief listing
-			display_sites_brief
+			display_sites "brief" $@
 			exit 0;;
 		lt )
 			shift 1
