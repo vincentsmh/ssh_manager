@@ -1,8 +1,8 @@
 #!/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.4.0" #Current version
-LAST_UPDATE="20150222_1142"
+VERSION="1.4.1" #Current version
+LAST_UPDATE="20150222_1154"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -50,6 +50,33 @@ function strlen()
 	fi
 
 	echo $len
+}
+
+# This function will infinitely ask the given question until the user inputs an
+# answer.  The answer will be set to the global parameter ${ans}.
+#   $1: question
+#   $2: '-s' to hide the typing character. If not '-s', the given value will
+#       be a default value when the user press ENTER without input any value.
+function ask_question()
+{
+  echo -e
+  if [ ! -z $2 ]; then
+    local option="$2"
+  fi
+
+  while :
+  do
+    if [ "${option}" == "-s" ]; then
+      echo -ne "$1"
+      read -s ans
+      echo -e
+    else
+      read -p "$1" ans
+      if [ ! -z ${option} ]; then ans=${ans:-${options}}; fi
+    fi
+
+    if [ "${ans}" != "" ]; then break; else echo -e "Cannot be empty"; fi
+  done
 }
 
 function unset_site()
@@ -1712,12 +1739,16 @@ function do_upgrade()
 
 	if [ "$new_ver" != "" ] || [ "$new_lst_upd" != "" ]; then
     if [ "$new_ver" != "$VERSION" ] || [ "$new_lst_upd" != "$LAST_UPDATE" ]; then
-      color_msg 32 "Updating ... "
-      # Upgrade
-      cd ssh_script
-      sudo bash setup.sh
-      cd ..
-      show_version "$new_ver" "$new_lst_upd"
+      color_msg 32 "New update available ... "
+      ask_question "Do you want to upgrade (y/n) [y] " "y"
+
+      if [ "${ans}" == "y" ] || [ "${ans}" == "Y" ]; then
+        # Upgrade
+        cd ssh_script
+        sudo bash setup.sh
+        cd ..
+        show_version "$new_ver" "$new_lst_upd"
+      fi
     fi
 	else
 		color_msg 32 "Up to date"
