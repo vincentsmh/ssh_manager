@@ -2,7 +2,7 @@
 
 DATA="$HOME/conn.data"
 VERSION="1.4.1" #Current version
-LAST_UPDATE="20150222_1154"
+LAST_UPDATE="20150222_1312"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -404,11 +404,10 @@ function display_usage_rvt()
 }
 
 # Display all of the remote sites defined in conn.data
-# Input $1: display mode
-#       $2, $3, ...: keywords
+# Input $1, $2, ...: keywords
 function display_sites()
 {
-  if [ "$1" == "brief" ]; then
+  if [ "${LISTING_MODE}" == "brief" ]; then
     local display_mode="b"
   else
     local display_mode=""
@@ -2174,8 +2173,8 @@ else
 			exit 0;;
 		lb )
 			shift 1
-      # TODO: add keyword search for brief listing
-			display_sites "brief" $@
+      LISTING_MODE="brief"
+			display_sites $@
 			exit 0;;
 		lt )
 			shift 1
