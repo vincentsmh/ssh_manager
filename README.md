@@ -15,3 +15,13 @@ bash setup.sh
 How to use
 ==========
 After install this this tool, please type 'cn' to see the usage.
+
+- Quick start:
+    * Add a node  
+      cn a "user@ip" ["desc"] [port]
+
+    * List all added node  
+      cn l
+
+    * Connect to a node  
+      cn [num]
