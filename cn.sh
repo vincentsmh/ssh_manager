@@ -1625,9 +1625,7 @@ function connect_by()
 			rdesktop ) open rdp://$ip:$port ;;
 		esac
 	else
-		has_binary "$1"
-
-		if [ ?$ -eq 1 ]; then
+		if has_binary "$1"; then
 			case "$1" in
 				ftp )       $1 $ip $port $4 ;;
 				vncviewer ) $1 $ip:$port $4 ;;
@@ -1701,10 +1699,10 @@ function has_binary()
 {
 	local bin_cmd=$(command -v "$1")
 
-	if [ "$bin_cmd" == "" ]; then
-		return 0
-	else
+	if [ -z ${bin_cmd} ]; then
 		return 1
+	else
+		return 0
 	fi
 }
 
@@ -1725,9 +1723,7 @@ function do_upgrade()
 	show_version
 
 	# Check git client tool
-	has_binary "git"
-
-	if [ $? -eq 0 ]; then
+	if has_binary "git"; then
 		color_msg 31 "Please make sure you have git client tool."
 		return 0
 	fi
@@ -1912,9 +1908,7 @@ function check_update()
 		return 0
 	fi
 
-	has_binary "git"
-
-	if [ $? -eq 0 ]; then
+	if has_binary "git"; then
 		return 1
 	fi
 
