@@ -1,8 +1,8 @@
 #!/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.4.1" #Current version
-LAST_UPDATE="20150222_1312"
+VERSION="1.4.2" #Current version
+LAST_UPDATE="20150312_0028"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -824,9 +824,10 @@ function display_connect()
 	color_msg 38 "   - " -n
 	color_msg 32 "num" -n
 	color_msg 38 ": cn #num " -n
-	color_msg 33 "[x|f|v|r] [port]"
+	color_msg 33 "[o|f|v|r] [port|SSH_Options]"
 	color_msg 38 "     ex. cn 2 (SSH to site 2)"
-	color_msg 38 "     ex. cn 2 x (with X-forwarding)"
+	color_msg 38 "     ex. cn 2 o -X (with X-forwarding)"
+	color_msg 38 "     ex. cn 2 o -A (with authentication agent connection)"
 	color_msg 38 "     ex. cn 2 f (FTP to site 2)"
 	color_msg 38 "     ex. cn 2 r (RDP to site 2)"
 	color_msg 38 "     ex. cn 2 r 5010 (RDP to site 2 by port number 5010)"
@@ -1593,26 +1594,22 @@ function df_port()
 }
 
 # Connect to the given site by the given protocol(command)
-# Input: $1->utility name, $2->site number, $3->Port|x, $4->options
+#   - connect_by ssh SITE_NUMBER [Options]
+#   - connect_by ftp|vncviewer|rdesktop SITE_NUMBER PORT
 function connect_by()
 {
-	increase_feq $2
+  local num=$2
+	increase_feq ${num}
 
 	# SSH
 	if [ "$1" == "ssh" ]; then
-		# With X-Forwarding
-		if [ "$3" == "x" ]; then
-			color_msg 32 "SSH to ${site_userip[$2]}:${site_port[$2]} with X-Forwarding"
-			ssh -p ${site_port[$2]} -X ${site_userip[$2]}
-		else
-			color_msg 32 "SSH to ${site_userip[$2]}:${site_port[$2]}"
-			ssh -p ${site_port[$2]} ${site_userip[$2]}
-		fi
-
+    shift 2
+    color_msg 32 "SSH to ${site_userip[$num]}:${site_port[$num]} ... "
+    ssh -p ${site_port[$num]} ${site_userip[$num]} $@
 		return 0
 	fi
 
-	# Other connection protocol
+	# Other connection protocols
 	local ip=$(find_ip $2)
 	local port=$(df_port "$1" "$3")
 
@@ -1627,9 +1624,9 @@ function connect_by()
 	else
 		if has_binary "$1"; then
 			case "$1" in
-				ftp )       $1 $ip $port $4 ;;
-				vncviewer ) $1 $ip:$port $4 ;;
-				rdesktop )  $1 $ip:$port $4 ;;
+				ftp )       $1 $ip $port ;;
+				vncviewer ) $1 $ip:$port ;;
+				rdesktop )  $1 $ip:$port ;;
 			esac
 		else
 			color_msg 31 "Require utility: " -n
@@ -2230,19 +2227,21 @@ else
 		color_msg 32 "[$1] does not exist"
 	else
 		if [ -z "$2" ]; then
-			connect_by "ssh" $1
+			connect_by "ssh" $@
 			exit $?
 		else
 			case "$2" in
 			[f] )
-				connect_by "ftp" $1 "$3" "$4" ;;
+				connect_by "ftp" $1 "$3" ;;
 			[v] )
-				connect_by "vncviewer" $1 "$3" "$4" ;;
+				connect_by "vncviewer" $1 "$3" ;;
 			[r] )
-				connect_by "rdesktop" $1 "$3" "$4" ;;
-			[x] )
-				connect_by "ssh" $1 "x" ;;
-			[*] )
+				connect_by "rdesktop" $1 "$3" ;;
+      [o] )
+        num=$1
+        shift 2
+        connect_by "ssh" ${num} $@ ;;
+			* )
 				color_msg 32 "Unrecognized argument: $2." ;;
 			esac
 		fi
