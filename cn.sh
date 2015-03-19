@@ -1696,7 +1696,7 @@ function has_binary()
 {
 	local bin_cmd=$(command -v "$1")
 
-	if [ -z ${bin_cmd} ]; then
+	if [ -z "${bin_cmd}" ]; then
 		return 1
 	else
 		return 0
@@ -1720,7 +1720,7 @@ function do_upgrade()
 	show_version
 
 	# Check git client tool
-	if has_binary "git"; then
+	if ! has_binary "git"; then
 		color_msg 31 "Please make sure you have git client tool."
 		return 0
 	fi
