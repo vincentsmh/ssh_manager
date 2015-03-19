@@ -1,8 +1,8 @@
 #!/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.4.2" #Current version
-LAST_UPDATE="20150312_0028"
+VERSION="1.4.3" #Current version
+LAST_UPDATE="20150319_2218"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -422,8 +422,8 @@ function display_sites()
       local keyword_found=0
 
       for keyword in $@; do
-        local exists_userip=$(echo "${site_userip[$i]}" | grep -c "${keyword}")
-        local exists_desc=$(echo "${site_desc[$i]}" | grep -c "${keyword}")
+        local exists_userip=$(echo "${site_userip[$i],,}" | grep -c "${keyword,,}")
+        local exists_desc=$(echo "${site_desc[$i],,}" | grep -c "${keyword,,}")
 
         if [ "${exists_userip}" != "0" ] || [ "${exists_desc}" != "0" ]; then
           local keyword_found=$(( ${keyword_found} + 1 ))
