@@ -731,7 +731,7 @@ function display_reg_usage()
 	color_msg 38 "   - " -n
 	color_msg 32 "r" -n
 	color_msg 38 ": cn r " -n
-	color_msg 33 "#num"
+	color_msg 33 "NUMBER [NUMBER2 NUMBER3 ...]"
 	color_msg 38 "     Register public key to site #num. You would be asked to input password "
 	color_msg 38 "     for several times. After the registration, you can connect to that "
 	color_msg 38 "     site without type password."
