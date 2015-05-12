@@ -1,8 +1,8 @@
 #!/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.4.3" #Current version
-LAST_UPDATE="20150319_2218"
+VERSION="1.4.4" #Current version
+LAST_UPDATE="20150512_1035"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -517,9 +517,20 @@ function scp_to()
 
 	for i in $@; do
 		if [ "${site_num[$i]}" != "" ]; then
-			scp -r -P ${site_port[$i]} "$file" "${site_userip[$i]}:"
+			scp -r -P ${site_port[$i]} "$file" "${site_userip[$i]}:" &
 		fi
-	done
+  done
+
+  # Wait scp to finish
+  while true;
+  do
+    local check=$(ps aux | grep scp | grep -c "${file}")
+    if [ ${check} -eq 0 ]; then
+      break
+    else
+      sleep 1
+    fi
+  done
 
 	if [ $? -eq 0 ]; then
 		color_msg 32 "Copy file successfull."
