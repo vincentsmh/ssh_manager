@@ -1109,22 +1109,10 @@ function del_site()
   display_spc_sites $@
 
   # Confirming
-  local yn=""
-
-  while :
-  do
-    color_msg 38 "Are you sure " -n
-    read -p "(y/n)" yn
-
-    case $yn in
-      [Yy]* )
-        break;;
-      [Nn]* )
-        exit 0 ;;
-      * )
-        echo "Please answer y or n";;
-    esac
-  done
+  ask_question "Are you sure (y/n) [n]" "n"
+  if [ "${ans}" == "n" ] || [ "${ans}" == "N" ]; then
+    exit 0
+  fi
 
   local num_check=0
   local userip_check=0
@@ -1153,9 +1141,14 @@ function del_site()
     if [ $(strlen "${site_tag[$num]}") -eq $max_tag_len ]; then
       tag_check=1
     fi
+
+    if [ $(strlen "${site_status[$num]}") -eq $max_status_len ]; then
+      status_check=1
+    fi
   done
 
-  find_max_len $num_check $userip_check $port_check $desc_check $tag_check
+  find_max_len $num_check $userip_check $port_check $desc_check $tag_check \
+    $status_check
   export_to_file
 }
 
@@ -1390,7 +1383,7 @@ function modify_desc()
 {
   if [ "${site_num[$1]}" != "" ] && [ "$2" != "" ]; then
     site_desc[$1]="$2"
-    find_max_len 0 0 0 1 0
+    find_max_len 0 0 0 1 0 0
     export_to_file
   else
     display_md_usage
@@ -1406,13 +1399,13 @@ function modify_field()
     case "$1" in
       [0] )
         site_userip[$2]="$3"
-        find_max_len 0 1 0 0 0;;
+        find_max_len 0 1 0 0 0 0;;
       [1] ) 
         site_desc[$2]="$3"
-        find_max_len 0 0 0 1 0;;
+        find_max_len 0 0 0 1 0 0;;
       [2] )
         site_port[$2]="$3"
-        find_max_len 0 0 1 0 0;;
+        find_max_len 0 0 1 0 0 0;;
     esac
 
     export_to_file
