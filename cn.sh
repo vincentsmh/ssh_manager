@@ -1,8 +1,8 @@
 #!/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.4.4" #Current version
-LAST_UPDATE="20150727_0828"
+VERSION="1.4.5" #Current version
+LAST_UPDATE="20150907_1515"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -823,7 +823,7 @@ function display_connect()
 {
   color_msg 38 "   - " -n
   color_msg 32 "num" -n
-  color_msg 38 ": cn #num " -n
+  color_msg 38 ": cn #num|string " -n
   color_msg 33 "[o|f|v|r] [port|SSH_Options]"
   color_msg 38 "     ex. cn 2 (SSH to site 2)"
   color_msg 38 "     ex. cn 2 o -X (with X-forwarding)"
@@ -833,6 +833,7 @@ function display_connect()
   color_msg 38 "     ex. cn 2 r 5010 (RDP to site 2 by port number 5010)"
   color_msg 38 "     ex. cn 2 v (VNC to site 2)"
   color_msg 38 "     ex. cn 2 v 5903 (VNC to site 2 by port number 5903)"
+  color_msg 38 "     ex. cn siteA"
 }
 
 function display_list()
@@ -1589,11 +1590,22 @@ function df_port()
 #   - connect_by ftp|vncviewer|rdesktop SITE_NUMBER PORT
 function connect_by()
 {
+  local protocol="$1"
   local num=$2
+
+  if [ $(is_integer ${num}) -ne 1 ]; then
+    # Find all sites with keywords and ask the user to choose one.
+    shift 1
+    display_sites $@
+    ask_question "Select a site (number): "
+    connect_by "${protocol}" ${ans}
+    exit 0
+  fi
+
   increase_feq ${num}
 
   # SSH
-  if [ "$1" == "ssh" ]; then
+  if [ "${protocol}" == "ssh" ]; then
     shift 2
     color_msg 32 "SSH to ${site_userip[$num]}:${site_port[$num]} ... "
     ssh -p ${site_port[$num]} ${site_userip[$num]} $@
@@ -1602,26 +1614,26 @@ function connect_by()
 
   # Other connection protocols
   local ip=$(find_ip $2)
-  local port=$(df_port "$1" "$3")
+  local port=$(df_port "${protocol}" "$3")
 
-  color_msg 32 "Connecting ($1) to $ip [$port]..."
+  color_msg 32 "Connecting (${protocol}) to $ip [$port]..."
 
   if [ "$(is_osx)" == "1" ]; then
-    case "$1" in
+    case "${protocol}" in
       ftp ) open ftp://$ip:$port ;;
       vncviewer ) open vnc://$ip:$port ;;
       rdesktop ) open rdp://$ip:$port ;;
     esac
   else
-    if has_binary "$1"; then
-      case "$1" in
-        ftp )       $1 $ip $port ;;
-        vncviewer ) $1 $ip:$port ;;
-        rdesktop )  $1 $ip:$port ;;
+    if has_binary "${protocol}"; then
+      case "${protocol}" in
+        ftp )       ${protocol} $ip $port ;;
+        vncviewer ) ${protocol} $ip:$port ;;
+        rdesktop )  ${protocol} $ip:$port ;;
       esac
     else
       color_msg 31 "Require utility: " -n
-      color_msg 32 "$1"
+      color_msg 32 "${protocol}"
     fi
   fi
 }
@@ -2227,29 +2239,23 @@ else
       exit 0;;
   esac
 
-  is_site_exist $1
-
-  if [ $? -eq 0 ]; then
-    color_msg 32 "[$1] does not exist"
+  if [ -z "$2" ]; then
+    connect_by "ssh" $@
+    exit $?
   else
-    if [ -z "$2" ]; then
-      connect_by "ssh" $@
-      exit $?
-    else
-      case "$2" in
-        [f] )
-          connect_by "ftp" $1 "$3" ;;
-        [v] )
-          connect_by "vncviewer" $1 "$3" ;;
-        [r] )
-          connect_by "rdesktop" $1 "$3" ;;
-        [o] )
-          num=$1
-          shift 2
-          connect_by "ssh" ${num} $@ ;;
-        * )
-          color_msg 32 "Unrecognized argument: $2." ;;
-      esac
-    fi
+    case "$2" in
+      [f] )
+        connect_by "ftp" $1 "$3" ;;
+      [v] )
+        connect_by "vncviewer" $1 "$3" ;;
+      [r] )
+        connect_by "rdesktop" $1 "$3" ;;
+      [o] )
+        num=$1
+        shift 2
+        connect_by "ssh" ${num} $@ ;;
+      * )
+        color_msg 32 "Unrecognized argument: $2." ;;
+    esac
   fi
 fi
