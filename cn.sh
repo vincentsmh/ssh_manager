@@ -1,8 +1,8 @@
 #!/bin/bash
 
 DATA="$HOME/conn.data"
-VERSION="1.4.5" #Current version
-LAST_UPDATE="20150907_1515"
+VERSION="1.4.6" #Current version
+LAST_UPDATE="20151124_1624"
 DEFAULT_SSH_PORT=22
 DEFAULT_MAX_NUM_LEN=2
 DEFAULT_MAX_USERIP_LEN=7
@@ -1120,6 +1120,7 @@ function del_site()
   local port_check=0
   local desc_check=0
   local tag_check=0
+  local status_check=0
 
   # Find indexes of the deleting site
   for num in $(expend_num $@); do
@@ -1146,6 +1147,8 @@ function del_site()
     if [ $(strlen "${site_status[$num]}") -eq $max_status_len ]; then
       status_check=1
     fi
+
+    unset_entry $num
   done
 
   find_max_len $num_check $userip_check $port_check $desc_check $tag_check \
@@ -1411,11 +1414,15 @@ function modify_field()
 
     export_to_file
   else
-    case "$1" in
-      [0] ) display_mu_usage;;
-      [1] ) display_md_usage;;
-      [2] ) display_mp_usage;;
-    esac
+    if [ "${site_num[$2]}" != "" ]; then
+      display_sites
+    else
+      case "$1" in
+        [0] ) display_mu_usage;;
+        [1] ) display_md_usage;;
+        [2] ) display_mp_usage;;
+      esac
+    fi
 
     exit 0
   fi
