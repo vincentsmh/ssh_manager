@@ -461,9 +461,10 @@ function display_scp_to()
   color_msg 38 "   - " -n
   color_msg 32 "ct" -n
   color_msg 38 ": cn ct " -n
-  color_msg 33 "\"file\" #num1 [#num2] [#num3] [...]"
-  color_msg 38 "     scp a file/directory to the given site. "
-  color_msg 38 "     ex: cn ct file 3"
+  color_msg 33 "file1 [file2] [file3] [...] -t #num1 [#num2] [#num3] [...]"
+  color_msg 38 "     scp file(s) to the given site(s). "
+  color_msg 38 "     ex: cn ct file1 file2 -t 3"
+  color_msg 38 "     ex: cn ct folder/* -t 3"
 }
 
 function display_scp_from()
@@ -504,7 +505,7 @@ function scp_from()
 }
 
 # Secure copy file to the remote site.
-# Input: $1->the file which will be copied, $2,3,...->site number
+# Input: file1 file2 ... -t num1 num2 ...
 function scp_to()
 {
   if [ -z "$1" ] || [ -z "$2" ]; then
@@ -512,12 +513,25 @@ function scp_to()
     exit 0
   fi
 
-  file="$1"
+  files="$1"
+  shift_num=1
   shift 1
+
+  for arg in $@; do
+    if [ "${arg}" != "-t" ]; then
+      files="${files} ${arg}"
+      shift_num=$(( ${shift_num} + 1 ))
+    else
+      break
+    fi
+  done
+
+  shift ${shift_num}
 
   for i in $(expend_num $@); do
     if [ "${site_num[$i]}" != "" ]; then
-      scp -r -P ${site_port[$i]} "$file" "${site_userip[$i]}:"
+      echo -e "scp -r -P ${site_port[$i]} ${files} \"${site_userip[$i]}:\""
+      scp -r -P ${site_port[$i]} ${files} "${site_userip[$i]}:"
     fi
   done
 
