@@ -176,4 +176,19 @@ else
 	touch $SITEDATA_PATH
 	check_n_exit $? "Fail to deploy user data"
 	color_msg 32 "Deploy user data successfully"
+  echo -e
+  echo -ne "You can use command "
+  color_msg 33 "cn " -n
+  echo -e "to see the help now."
+  echo -e "
+  Here is a quick start:
+    + Add a new site
+      cn a 'user@192.168.1.1' 'My first site'
+
+    + List managed sites
+      cn l
+
+    + Connect to a site with its number, 1
+      cn 1
+  "
 fi
