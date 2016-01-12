@@ -581,7 +581,7 @@ function reg_key()
     color_msg 38 "Copying local public key to [" -n
     color_msg 32 "$ip" -n
     color_msg 38 "] ..."
-    scp_to "$pk" "$sn"
+    scp_to "$pk" -t "$sn"
     check_n_exit $? "Copy file to $ip failed."
 
     # Cat public key to remote site's authorized_key
@@ -1685,8 +1685,8 @@ function deploy_to()
     exit 1
   fi
 
-  scp_to $utility_path "$@"
-  scp_to $DATA "$@"
+  scp_to $utility_path -t "$@"
+  scp_to $DATA -t "$@"
 
   for i in $(expend_num $@); do
     color_msg 38 "Deploying ${site_userip[$i]}..."
