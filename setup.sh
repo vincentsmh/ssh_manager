@@ -151,6 +151,18 @@ function check_sitedata_fmt()
 }
 
 # Main 
+
+# Don't use root user to deploy this utility
+if [ "$(id -u)" == "0" ]; then
+  color_msg 38 "Don't use " -n
+  color_msg 31 "root " -n
+  color_msg 38 "to deploy this utility."
+  color_msg 38 "It's ok to deploy without " -n
+  color_msg 32 "'sudo'"
+  echo -e
+  exit 1
+fi
+
 ## Deploy 'cn' script
 DEPLOY_FOLDER=$(find_deploy_folder)
 SITEDATA_PATH="$HOME/conn.data"
