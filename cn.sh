@@ -517,6 +517,7 @@ function scp_to()
   shift_num=1
   shift 1
 
+  # Files
   for arg in $@; do
     if [ "${arg}" != "-t" ]; then
       files="${files} ${arg}"
@@ -1765,9 +1766,9 @@ function do_upgrade()
         cd ..
         show_version "$new_ver" "$new_lst_upd"
       fi
+    else
+      color_msg 32 "Up to date"
     fi
-  else
-    color_msg 32 "Up to date"
   fi
 
   # Clean up
@@ -2049,6 +2050,7 @@ function cssh_sites()
   return 0
 }
 
+# Expend '1-5' to '1 2 3 4 5' which is usually used in for-loop.
 function expend_num()
 {
   if [ $(echo -e "$1" | grep -c "-") -ne 0 ]; then
