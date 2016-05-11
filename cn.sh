@@ -1802,7 +1802,7 @@ function show_version()
 # Input: $1->tag $2,$3,$4,...->Sites
 function tag_site()
 {
-  if [ -z $1 ]; then
+  if [ -z "$1" ]; then
     display_usg_tag
     exit 0
   fi
@@ -2162,6 +2162,7 @@ else
     [t] )
       shift 1
       tag_site "$@"
+      display_sites
       exit 0;;
     [v] )
       show_version
