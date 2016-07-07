@@ -917,6 +917,14 @@ function display_pingall()
   color_msg 38 "     cn pa. Ping all sites to test their connectivity."
 }
 
+function display_p8()
+{
+  color_msg 38 "   - " -n
+  color_msg 32 "p8" -n
+  color_msg 38 ": cn p8 "
+  color_msg 38 "     Ping Google DNS to test your Internet connectivity"
+}
+
 function display_reorder()
 {
   color_msg 38 "   - " -n
@@ -972,6 +980,8 @@ function display_usage()
   display_cssh_usage
   echo -e
   display_ping
+  echo -e
+  display_p8
   echo -e
   display_usg_tag
   echo -e
@@ -1384,6 +1394,20 @@ function ping_all_sites()
 
   ping_site ${all_nodes}
   export_to_file
+}
+
+function ping_google_dns()
+{
+  echo -e
+  echo -ne "Ping Google ... "
+  local wt=$(find_ping_wait_time)
+  ping -c 1 -W ${wt} 8.8.8.8 >> /dev/null
+  if [ $? -eq 0 ]; then
+    color_msg 32 "Success"
+  else
+    color_msg 31 "Fail"
+  fi
+  echo -e
 }
 
 # Increase one to the frequency of the given site
@@ -2228,6 +2252,9 @@ else
     pa )
       ping_all_sites
       display_sites
+      exit 0;;
+    p8 )
+      ping_google_dns
       exit 0;;
     rvt )
       shift 1
