@@ -10,19 +10,6 @@ function color_msg
 	echo -e $3 "\033[$1m$2\033[0m"
 }
 
-# Find out the deply path according to Linux of OS X
-function find_deploy_folder()
-{
-	# Check the deploy OS is Linux or Mac(Darwin)
-	os=`uname`
-
-	if [ "$os" == "Linux" ]; then
-		echo "/usr/local/bin"
-	else
-		echo "/usr/bin"
-	fi
-}
-
 function unset_site()
 {
 	unset site_num
@@ -164,7 +151,7 @@ if [ "$(id -u)" == "0" ]; then
 fi
 
 ## Deploy 'cn' script
-DEPLOY_FOLDER=$(find_deploy_folder)
+DEPLOY_FOLDER="/usr/local/bin"
 SITEDATA_PATH="$HOME/conn.data"
 mkdir -p $DEPLOY_FOLDER
 sudo cp cn.sh $DEPLOY_FOLDER/cn
