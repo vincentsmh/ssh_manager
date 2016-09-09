@@ -13,6 +13,7 @@ DEFAULT_MAX_FEQ_LEN=9
 DEFAULT_MAX_TAG_LEN=3
 CHECKOUT_FOLDER=".cn_upgrade"
 ENABLE_AUTO_CHECK_UPDATE=1
+SSH="ssh -o StrictHostKeyChecking=no"
 
 # Color function
 # Input: $1->color, $2->message, $3->newline or not
@@ -592,7 +593,7 @@ function reg_key()
     color_msg 38 "] ..."
 
     local cmd="mkdir -p ~/.ssh; cat id_rsa.pub >> ~/.ssh/authorized_keys; rm -rf id_rsa.pub"
-    ssh -p ${site_port[$sn]} ${site_userip[$sn]} "$cmd"
+    ${SSH} -p ${site_port[$sn]} ${site_userip[$sn]} "$cmd"
     check_n_exit $? "Register public key failed"
 
     echo -e
@@ -1654,7 +1655,7 @@ function connect_by()
   if [ "${protocol}" == "ssh" ]; then
     shift 2
     color_msg 32 "SSH to ${site_userip[$num]}:${site_port[$num]} ... "
-    ssh -p ${site_port[$num]} ${site_userip[$num]} $@
+    ${SSH} -p ${site_port[$num]} ${site_userip[$num]} $@
     return 0
   fi
 
@@ -1715,7 +1716,7 @@ function deploy_to()
 
   for i in $(expend_num $@); do
     color_msg 38 "Deploying ${site_userip[$i]}..."
-    ssh -p ${site_port[$i]} -t ${site_userip[$i]} "sudo mv ~/cn /usr/local/bin/cn"
+    ${SSH} -p ${site_port[$i]} -t ${site_userip[$i]} "sudo mv ~/cn /usr/local/bin/cn"
     color_msg 32 "Deploy ${site_userip[$i]} successfully."
   done
 }
@@ -1737,7 +1738,7 @@ function cmd_to()
     ip=$(find_ip $i)
     color_msg 32 "Send command to " -n
     color_msg 33 "$ip"
-    ssh -p ${site_port[$i]} -t ${site_userip[$i]} "$cmd"
+    ${SSH} -p ${site_port[$i]} -t ${site_userip[$i]} "$cmd"
   done
 }
 
@@ -2101,7 +2102,7 @@ function reverse_tunnel()
   fi
 
   for num in $@; do
-    ssh -NfR ${reverse_port}:localhost:${site_port[$num]} \
+    ${SSH} -NfR ${reverse_port}:localhost:${site_port[$num]} \
       ${site_userip[$num]}
   done
 }
@@ -2116,7 +2117,7 @@ function ssh_ping()
   fi
 
   for num in $(expend_num $@); do
-    ssh -q ${site_userip[$num]} exit
+    ${SSH} -q ${site_userip[$num]} exit
 
     if [ $? -eq 0 ]; then
       change_site_status "${num}" "ssh" "On"
