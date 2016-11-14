@@ -533,7 +533,7 @@ function scp_to()
   for i in $(expend_num $@); do
     if [ "${site_num[$i]}" != "" ]; then
       echo -e "scp -r -P ${site_port[$i]} ${files} \"${site_userip[$i]}:\""
-      scp -r -P ${site_port[$i]} ${files} "${site_userip[$i]}:"
+      scp -r -P ${site_port[$i]} "${files}" "${site_userip[$i]}:"
     fi
   done
 
