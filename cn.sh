@@ -45,9 +45,9 @@ function check_n_exit()
 function strlen()
 {
   if [ -z $2 ]; then
-    local len=$(($(echo "$1" | wc -c | bc) - 1 ))
+    local len=$(($(echo "$1" | wc -c) - 1 ))
   else
-    local len=$(($(echo $1 | wc -c | bc) - 1 ))
+    local len=$(($(echo $1 | wc -c) - 1 ))
   fi
 
   echo $len
@@ -161,7 +161,7 @@ function read_sites()
     IFS='_' read -a array <<< "$site"
 
     if [ $read_max -ne 0 ]; then
-      local th=$(echo ${array[0]} | bc)
+      local th=$(echo ${array[0]})
       site_num[$th]=$th
       site_userip[$th]=$( convert_symbol "${array[1]}" 1 )
       site_port[$th]=${array[2]}
@@ -175,14 +175,14 @@ function read_sites()
       fi
     else
       # Read max length for each column at the first loop
-      max_num_len=$( echo ${array[0]} | bc )
-      max_userip_len=$( echo ${array[1]} | bc )
-      max_port_len=$( echo ${array[2]} | bc )
-      max_desc_len=$( echo ${array[3]} | bc )
-      max_status_len=$( echo ${array[4]} | bc )
-      max_feq_len=$( echo ${array[5]} | bc )
-      max_tag_len=$( echo ${array[6]} | bc )
-      lst_ckday=$( echo ${array[7]} | bc )
+      max_num_len=$( echo ${array[0]})
+      max_userip_len=$( echo ${array[1]})
+      max_port_len=$( echo ${array[2]})
+      max_desc_len=$( echo ${array[3]})
+      max_status_len=$( echo ${array[4]})
+      max_feq_len=$( echo ${array[5]})
+      max_tag_len=$( echo ${array[6]})
+      lst_ckday=$( echo ${array[7]})
 
       check_max_len
       read_max=1
