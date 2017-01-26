@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DATA="$HOME/conn.data"
+DATA="$HOME/.conn.data"
 VERSION="1.5.2" #Current version
 LAST_UPDATE="20170126_1916"
 DEFAULT_SSH_PORT=22
