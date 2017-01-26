@@ -139,13 +139,11 @@ function check_sitedata_fmt()
 
 # Main 
 
-# Don't use root user to deploy this utility
-if [ "$(id -u)" == "0" ]; then
-  color_msg 38 "Don't use " -n
+# Check root privilege for deployment
+if [ "$(id -u)" != "0" ]; then
+  color_msg 38 "Need " -n
   color_msg 31 "root " -n
-  color_msg 38 "to deploy this utility."
-  color_msg 38 "It's ok to deploy without " -n
-  color_msg 32 "'sudo'"
+  color_msg 38 "privilege."
   echo -e
   exit 1
 fi
@@ -154,8 +152,8 @@ fi
 DEPLOY_FOLDER="/usr/local/bin"
 SITEDATA_PATH="$HOME/conn.data"
 mkdir -p $DEPLOY_FOLDER
-sudo cp cn.sh $DEPLOY_FOLDER/cn
-sudo chmod 755 $DEPLOY_FOLDER/cn
+cp cn.sh $DEPLOY_FOLDER/cn
+chmod 755 $DEPLOY_FOLDER/cn
 check_n_exit $? "Deploy binary failed"
 color_msg 32 "Deploy binary successfully"
 
