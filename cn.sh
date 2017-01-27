@@ -1787,7 +1787,7 @@ function do_upgrade()
       if [ "${ans}" == "y" ] || [ "${ans}" == "Y" ]; then
         # Upgrade
         cd ssh_script
-        bash setup.sh
+        sudo bash setup.sh
         cd ..
         show_version "$new_ver" "$new_lst_upd"
       fi
