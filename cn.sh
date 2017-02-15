@@ -1772,7 +1772,7 @@ function do_upgrade()
   # Check git client tool
   if ! has_binary "git"; then
     color_msg 31 "Please make sure you have git client tool."
-    return 0
+    return 1
   fi
 
   # Checkout and get version

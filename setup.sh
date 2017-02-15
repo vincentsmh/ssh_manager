@@ -138,6 +138,12 @@ function check_sitedata_fmt()
   return 0
 }
 
+function fix_userowner()
+{
+  local USERG=$(id -g -n ${SUDO_USER})
+  chown ${SUDO_USER}:$USERG ${DATA}
+}
+
 # Main 
 
 # Check root privilege for deployment
@@ -194,3 +200,6 @@ else
   cn 1
   "
 fi
+
+# Fix user owner of the conn.data
+fix_userowner
