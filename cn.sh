@@ -1717,6 +1717,16 @@ function deploy_to()
   for i in $(expend_num $@); do
     color_msg 38 "Deploying ${site_userip[$i]}..."
     ${SSH} -p ${site_port[$i]} -t ${site_userip[$i]} "sudo mv ~/cn /usr/local/bin/cn"
+    if [ $? -ne 0 ]; then
+      # Try again without 'sudo'
+      ${SSH} -p ${site_port[$i]} -t ${site_userip[$i]} "mv ~/cn /usr/local/bin/cn"
+
+      if [ $? -ne 0 ]; then
+        color_msg 31 "Deploy ${site_userip[$i]} failed! (mv)"
+        exit 1
+      fi
+    fi
+
     color_msg 32 "Deploy ${site_userip[$i]} successfully."
   done
 }
