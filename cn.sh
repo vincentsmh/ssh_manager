@@ -24,7 +24,7 @@ function color_msg
 
 function color_msg_len()
 {
-  echo -ne "\033[$1m"
+  echo -ne "\033[1;$1m"
   printf %-$3s "$2"
   echo -e $4 "\033[0m"
 }
