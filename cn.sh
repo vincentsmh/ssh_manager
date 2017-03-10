@@ -810,6 +810,14 @@ function display_del_usage()
   color_msg 38 "     ex: cn d 3 5 7 9"
 }
 
+function display_da_usage()
+{
+  color_msg 38 "   - " -n
+  color_msg 32 "da" -n
+  color_msg 38 ": cn da"
+  color_msg 38 "     delete all sites"
+}
+
 function display_acu_usage()
 {
   color_msg 38 "   - " -n
@@ -973,6 +981,8 @@ function display_usage()
   display_ac_usg
   echo -e
   display_del_usage
+  echo -e
+  display_da_usage
   echo -e
   display_scp_to
   echo -e
@@ -1563,6 +1573,16 @@ function sort_by_feq()
   done
 
   unset_tmp_site
+  export_to_file
+}
+
+function delete_all_sites()
+{
+  for ((i=1;i<=${num_of_sites};i++)); do
+    unset_entry $i
+  done
+
+  find_max_len 1 1 1 1 1 1
   export_to_file
 }
 
@@ -2230,6 +2250,11 @@ else
     cssh )
       shift 1
       cssh_sites "$@"
+      exit 0;;
+    da )
+      shift 1
+      delete_all_sites "$@"
+      display_sites
       exit 0;;
     doff )
       del_off_site
