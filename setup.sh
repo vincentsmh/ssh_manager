@@ -78,74 +78,7 @@ function check_empty()
   fi
 }
 
-# Read all sites data into 'sites'
-function read_sites()
-{
-  local read_max=0
-
-  while read site
-  do
-    unset array
-    IFS='_' read -a array <<< "$site"
-
-    if [ $read_max -ne 0 ]; then
-      local th=$(echo ${array[0]} | bc)
-      site_num[$th]=$th
-      site_userip[$th]=$(find_userip "${array[1]}")
-      site_desc[$th]=$(check_empty "${array[2]}")
-      site_status[$th]=${array[3]}
-      site_feq[$th]=${array[4]}
-      site_tag[$th]=$(check_empty "${array[5]}")
-      site_port[$th]=$(find_port "${array[1]}")
-      update_port_max ${#site_port[$th]}
-    else
-      # Read max length for each column at the first loop
-      max_num_len=$( echo ${array[0]} | bc )
-      max_userip_len=$( echo ${array[1]} | bc )
-      max_desc_len=$( echo ${array[2]} | bc )
-      max_status_len=$( echo ${array[3]} | bc )
-      max_feq_len=$( echo ${array[4]} | bc )
-      max_port_len=$(echo "${#DEFAULT_SSH_PORT}")
-
-      if [ "${array[5]}" != "" ]; then
-        max_tag_len=$( echo ${array[5]} | bc )
-      fi
-
-      read_max=1
-    fi
-  done < $DATA
-}
-
-function export_to_file()
-{
-  echo "$max_num_len"_"$max_userip_len"_"$max_port_len"_"$max_desc_len"_"$max_status_len"_"$max_feq_len"_"$max_tag_len" > $DATA
-
-  for i in ${!site_num[*]}; do
-    echo "${site_num[$i]}"_"${site_userip[$i]}"_"${site_port[$i]}"_"${site_desc[$i]}"_"${site_status[$i]}"_"${site_feq[$i]}"_"${site_tag[$i]}"
-  done >> $DATA
-}
-
-# Check site data format
-function check_sitedata_fmt()
-{
-  local check7=$(cat ${DATA} | awk -F "_" {'print $7'})
-  local check6=$(cat ${DATA} | awk -F "_" {'print $6'})
-
-  if [ "$check7" == "" ] && [ "$check6" != "" ]; then
-    return 1
-  fi
-
-  return 0
-}
-
-function fix_userowner()
-{
-  local USERG=$(id -g -n ${SUDO_USER})
-  chown ${SUDO_USER}:$USERG ${DATA}
-}
-
 # Main 
-
 # Check root privilege for deployment
 if [ "$(id -u)" != "0" ]; then
   color_msg 38 "Need " -n
@@ -169,37 +102,27 @@ if [ -f ${OLD_DATA} ]; then
 fi
 
 ## Deploy site data
-if [ -f $DATA ]; then
-  # Check site data format. If the format is in old version, convert it to
-  # the new site data format.
-  check_sitedata_fmt
-
-  if [ $? -eq 1 ]; then
-    color_msg 32 "Start site data convertion..." -n
-    read_sites
-    export_to_file
-    color_msg 32 "successfully"
-  fi
-else
+if [ ! -f $DATA ]; then
   touch $DATA
-  check_n_exit $? "Fail to deploy user data"
-  color_msg 32 "Deploy user data successfully"
-  echo -e
-  echo -ne "You can use command "
-  color_msg 33 "cn " -n
-  echo -e "to see the help now."
-  echo -e "
-  Here is a quick start:
-  + Add a new site
-  cn a 'user@192.168.1.1' 'My first site'
-
-  + List managed sites
-  cn l
-
-  + Connect to a site with its number, 1
-  cn 1
-  "
 fi
+
+check_n_exit $? "Fail to deploy user data"
+color_msg 32 "Deploy user data successfully"
+echo -e
+echo -ne "You can use command "
+color_msg 33 "cn " -n
+echo -e "to see the help now."
+echo -e "
+Here is a quick start:
++ Add a new site
+cn a 'user@192.168.1.1' 'My first site'
+
++ List managed sites
+cn l
+
++ Connect to a site with its number, 1
+cn 1
+"
 
 # Fix user owner of the conn.data
 fix_userowner
