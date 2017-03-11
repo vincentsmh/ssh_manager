@@ -145,12 +145,8 @@ function convert_symbol()
   fi
 }
 
-# Read all sites data into 'sites'
-function read_sites()
+function default_len()
 {
-  local len=0
-  local read_max=0
-  num_of_sites=0
   max_num_len=$DEFAULT_MAX_NUM_LEN
   max_userip_len=$DEFAULT_MAX_USERIP_LEN
   max_port_len=$DEFAULT_MAX_PORT_LEN
@@ -158,6 +154,15 @@ function read_sites()
   max_status_len=$DEFAULT_MAX_STATUS_LEN
   max_feq_len=$DEFAULT_MAX_FEQ_LEN
   max_tag_len=$DEFAULT_MAX_TAG_LEN
+}
+
+# Read all sites data into 'sites'
+function read_sites()
+{
+  local len=0
+  local read_max=0
+  num_of_sites=0
+  default_len
   lst_ckday=$(date +"%d")
   total_len=0
   unset_site
@@ -1052,6 +1057,11 @@ function display_usage()
 #        $6->1 to find maximum status string length
 function find_max_len()
 {
+  if [ ${#site_num[@]} -eq 0 ]; then
+    default_len
+    return
+  fi
+
   local len=0
 
   if [ $1 -eq 1 ];then
