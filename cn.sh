@@ -34,6 +34,13 @@ function log()
   echo "$1" >> $HOME/conn.log
 }
 
+function check_ans_n_exit()
+{
+  if [ "${ans}" == "n" ] || [ "${ans}" == "N" ]; then
+    exit 0
+  fi
+}
+
 function check_n_exit()
 {
   if [ $1 -ne 0 ]; then
@@ -1147,9 +1154,7 @@ function del_site()
 
   # Confirming
   ask_question "Are you sure (y/n) [n]" "n"
-  if [ "${ans}" == "n" ] || [ "${ans}" == "N" ]; then
-    exit 0
-  fi
+  check_ans_n_exit
 
   local num_check=0
   local userip_check=0
@@ -1578,6 +1583,9 @@ function sort_by_feq()
 
 function delete_all_sites()
 {
+  ask_question "This will delete all sites! Are you sure (y/n) [n]" "n"
+  check_ans_n_exit
+
   for ((i=1;i<=${num_of_sites};i++)); do
     unset_entry $i
   done
