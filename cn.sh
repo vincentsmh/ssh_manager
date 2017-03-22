@@ -436,9 +436,13 @@ function display_sites()
 
       for keyword in $@; do
         local exists_userip=$(echo "${site_userip[$i],,}" | grep -c "${keyword,,}")
+        local exists_port=$(echo "${site_port[$i],,}" | grep -c "${keyword,,}")
         local exists_desc=$(echo "${site_desc[$i],,}" | grep -c "${keyword,,}")
 
-        if [ "${exists_userip}" != "0" ] || [ "${exists_desc}" != "0" ]; then
+        if [ "${exists_userip}" != "0" ] \
+          || [ "${exists_desc}" != "0" ] \
+          || [ "${exists_port}" != "0" ];
+        then
           local keyword_found=$(( ${keyword_found} + 1 ))
         fi
       done
