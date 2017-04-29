@@ -54,6 +54,12 @@ function find_userip()
   fi
 }
 
+function fix_userowner()
+{
+  local USERG=$(id -g -n ${SUDO_USER})
+  chown ${SUDO_USER}:$USERG ${DATA}
+}
+
 function update_port_max()
 {
   if [ $1 -gt $max_port_len ]; then
