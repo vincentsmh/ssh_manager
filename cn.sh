@@ -216,6 +216,17 @@ function export_to_file()
   done >> $DATA
 }
 
+# is_number ARG -> 0 | 1
+#   - Test if the given argument is a number.
+function is_number()
+{
+  if [[ $1 =~ ^[0-9]+$ ]] ; then
+    return 0
+  else
+    return 1
+  fi
+}
+
 # Check if the given node exists in conn.data.
 # 0: does not exist, 1: exist
 function is_site_exist()
@@ -1430,7 +1441,7 @@ function ping_google_dns()
   echo -e
   echo -ne "Ping Google ... "
   local wt=$(find_ping_wait_time)
-  ping -c 1 -W ${wt} 8.8.8.8 >> /dev/null
+  ping -c 1 -W ${wt} 8.8.8.8 2>1 &> /dev/null
   if [ $? -eq 0 ]; then
     color_msg 32 "Success"
   else
@@ -2346,6 +2357,12 @@ else
       do_upgrade
       exit 0;;
   esac
+
+  if ! is_number $1; then
+    echo -ne "Bad argument: "
+    color_msg 33 $1
+    exit 1
+  fi
 
   if [ -z "$2" ]; then
     connect_by "ssh" $@
