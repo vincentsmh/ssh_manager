@@ -484,6 +484,15 @@ function display_ac_usg()
   color_msg 38 "     Add a new site and connect to it."
 }
 
+function display_ar_usg()
+{
+  color_msg 38 "   - " -n
+  color_msg 32 "ar" -n
+  color_msg 38 ": cn ar " -n
+  color_msg 33 "\"user@ip\" [\"desc\"]"
+  color_msg 38 "     Add a new site and register public key to it."
+}
+
 function display_scp_to()
 {
   color_msg 38 "   - " -n
@@ -1005,6 +1014,8 @@ function display_usage()
   display_add_usage
   echo -e
   display_ac_usg
+  echo -e
+  display_ar_usg
   echo -e
   display_del_usage
   echo -e
@@ -2266,6 +2277,15 @@ else
       # Enable/Disalbe auto update
       acu )
       switch_atckupd $2
+      exit 0;;
+    ar )
+      if [ -z $2 ]; then
+        display_ar_usg
+        exit 0
+      fi
+
+      add_node "$2" "$3" "$4"
+      reg_key $?
       exit 0;;
     cf )
       shift 1
