@@ -431,14 +431,8 @@ function display_usage_rvt()
 # Input $1, $2, ...: keywords
 function display_sites()
 {
-  if [ "${LISTING_MODE}" == "brief" ]; then
-    local display_mode="b"
-  else
-    local display_mode=""
-  fi
-
   local color=32
-  print_head_tail "head" "${display_mode}"
+  print_head_tail "head" "${LISTING_MODE}"
 
   for i in ${!site_num[*]}; do
     # Keyword searching
@@ -463,7 +457,7 @@ function display_sites()
       fi
     fi
 
-    display_entry $color $i "${display_mode}"
+    display_entry $color $i "${LISTING_MODE}"
     local color=$((color+1))
 
     if [ $color -eq 38 ]; then
@@ -471,7 +465,7 @@ function display_sites()
     fi
   done
 
-  print_head_tail "tail" "${display_mode}"
+  print_head_tail "tail" "${LISTING_MODE}"
   echo -e
 }
 
@@ -2318,7 +2312,7 @@ else
       exit 0;;
     lb )
       shift 1
-      LISTING_MODE="brief"
+      LISTING_MODE="b"
       display_sites $@
       exit 0;;
     lt )
