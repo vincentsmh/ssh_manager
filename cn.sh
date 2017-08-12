@@ -469,6 +469,15 @@ function display_sites()
   echo -e
 }
 
+# display_one_site SITE_NUMBER
+function display_one_site()
+{
+  print_head_tail "head" "${LISTING_MODE}"
+  display_entry 32 $1 "${LISTING_MODE}"
+  print_head_tail "tail" "${LISTING_MODE}"
+  echo -e
+}
+
 function display_ac_usg()
 {
   color_msg 38 "   - " -n
@@ -2210,6 +2219,22 @@ function ssh_ping_all()
   ssh_ping ${all_nodes}
 }
 
+function interactive_modify_userip()
+{
+  display_mu_usage
+  echo -e
+  display_sites
+  echo -ne  "Choose modifying site: "
+  read site
+  display_one_site ${site}
+  echo -ne "New user name: "
+  read user
+  echo -ne "New IP: "
+  read ip
+  modify_field 0 ${site} "${user}@${ip}"
+  display_one_site ${site}
+}
+
 # main()
 if [ -z "$1" ]; then
   display_usage
@@ -2320,8 +2345,13 @@ else
       list_by_tag "$@"
       exit 0;;
     mu )
-      modify_field 0 $2 "$3"
-      display_sites
+      if [ -z $2 ]; then
+        interactive_modify_userip
+      else
+        modify_field 0 $2 "$3"
+        display_one_site $2
+      fi
+
       exit 0;;
     md )
       modify_field 1 $2 "$3"
