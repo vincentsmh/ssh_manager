@@ -2227,10 +2227,14 @@ function interactive_modify_userip()
   echo -ne  "Choose modifying site: "
   read site
   display_one_site ${site}
-  echo -ne "New user name: "
+  local olduser=$(echo "${site_userip[$site]}" | awk -F "@" {'print $1'})
+  local oldip=$(echo "${site_userip[$site]}" | awk -F "@" {'print $2'})
+  echo -ne "User name [${olduser}]: "
   read user
-  echo -ne "New IP: "
+  user=${user:-${olduser}}
+  echo -ne "IP [${oldip}]: "
   read ip
+  ip=${ip:-${oldip}}
   modify_field 0 ${site} "${user}@${ip}"
   display_one_site ${site}
 }
