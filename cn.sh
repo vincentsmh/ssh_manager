@@ -1492,21 +1492,7 @@ function modify_desc()
 # Parameter $1: 0->userip, 1->description, 2->port
 function modify_field()
 {
-  if [ "${site_num[$2]}" != "" ] && [ "$3" != "" ]; then
-    case "$1" in
-      [0] )
-        site_userip[$2]="$3"
-        find_max_len 0 1 0 0 0 0;;
-      [1] ) 
-        site_desc[$2]="$3"
-        find_max_len 0 0 0 1 0 0;;
-      [2] )
-        site_port[$2]="$3"
-        find_max_len 0 0 1 0 0 0;;
-    esac
-
-    export_to_file
-  else
+  if [ "${site_num[$2]}" == "" ] || [ "$3" == "" ]; then
     if [ "${site_num[$2]}" != "" ]; then
       display_sites
     else
@@ -1517,8 +1503,22 @@ function modify_field()
       esac
     fi
 
-    exit 0
+    return 0
   fi
+
+  case "$1" in
+    [0] )
+      site_userip[$2]="$3"
+      find_max_len 0 1 0 0 0 0;;
+    [1] ) 
+      site_desc[$2]="$3"
+      find_max_len 0 0 0 1 0 0;;
+    [2] )
+      site_port[$2]="$3"
+      find_max_len 0 0 1 0 0 0;;
+  esac
+
+  export_to_file
 }
 
 # Find the max site.
