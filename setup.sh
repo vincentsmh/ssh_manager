@@ -1,14 +1,20 @@
 #!/bin/bash
 
-DATA="$HOME/.conn.data"
-OLD_DATA="$HOME/conn.data"
 DEFAULT_SSH_PORT=22
+DATA_DIR="${HOME}/.cn"
+DATA="${DATA_DIR}/sites"
 
 # Color function
 # Input: $1->color, $2->message, $3->newline or not
 function color_msg
 {
   echo -e $3 "\033[$1m$2\033[0m"
+}
+
+function fix_userowner()
+{
+  local USERG=$(id -g -n ${SUDO_USER})
+  chown -R ${SUDO_USER}:$USERG ${DATA_DIR}
 }
 
 function unset_site()
@@ -19,6 +25,25 @@ function unset_site()
   unset site_status
   unset site_feq
   unset site_tag
+}
+
+function migrate_data()
+{
+  local old_data="${HOME}/.conn.data ${HOME}/conn.data"
+  for d in ${old_data}; do
+    if [ -f ${d} ]; then
+      mv ${d} ${DATA}
+      return 0
+    fi
+  done
+}
+
+function init_data_folder()
+{
+  if [ ! -d ${DATA_DIR} ]; then
+    mkdir -p ${DATA_DIR}
+    touch ${DATA}
+  fi
 }
 
 function init_max_len()
@@ -52,12 +77,6 @@ function find_userip()
   else
     echo $userip
   fi
-}
-
-function fix_userowner()
-{
-  local USERG=$(id -g -n ${SUDO_USER})
-  chown ${SUDO_USER}:$USERG ${DATA}
 }
 
 function update_port_max()
@@ -102,15 +121,9 @@ chmod 755 $DEPLOY_FOLDER/cn
 check_n_exit $? "Deploy binary failed"
 color_msg 32 "Deploy binary successfully"
 
-## Migrate data to new location
-if [ -f ${OLD_DATA} ]; then
-  mv ${OLD_DATA} ${DATA}
-fi
-
-## Deploy site data
-if [ ! -f $DATA ]; then
-  touch $DATA
-fi
+init_data_folder
+migrate_data
+fix_userowner
 
 check_n_exit $? "Fail to deploy user data"
 color_msg 32 "Deploy user data successfully"
@@ -129,6 +142,3 @@ cn l
 + Connect to a site with its number, 1
 cn 1
 "
-
-# Fix user owner of the conn.data
-fix_userowner

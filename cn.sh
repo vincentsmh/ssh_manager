@@ -1,6 +1,7 @@
 #!/bin/bash
 
-DATA="$HOME/.conn.data"
+DATA_DIR="${HOME}/.cn"
+DATA="${DATA_DIR}/sites"
 VERSION="1.6.1" #Current version
 LAST_UPDATE="20170815"
 DEFAULT_SSH_PORT=22
