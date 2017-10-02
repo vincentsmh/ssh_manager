@@ -744,9 +744,8 @@ function display_author()
 {
   color_msg 38 "This utility is maintained by " -n
   color_msg 36 "Vincent Shi-Ming Huang."
-  color_msg 38 "If you have any problem or you hit some issue/bug, please send your comment to "
-  color_msg 36 "Vincent.SM.Huang@gmail.com"
-  color_msg 35 "http://vincent-smh.appspot.com"
+  color_msg 38 "If you have any problem or you hit some issue/bug, please report your problem to "
+  color_msg 36 "https://github.com/vincentsmh/ssh_manager"
 }
 
 # Display the usage of 'mu' command
