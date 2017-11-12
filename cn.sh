@@ -164,7 +164,8 @@ function read_sites()
   local read_max=0
   num_of_sites=0
   default_len
-  lst_ckday=$(date +"%d" | bc)
+  lst_ckday=$(date +"%d")
+  lst_ckday=$(expr ${lst_ckday} + 0)
   total_len=0
   unset_site
 
