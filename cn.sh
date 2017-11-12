@@ -1780,18 +1780,13 @@ function deploy_to()
 
   scp_to $utility_path -t "$@"
   scp_to $DATA -t "$@"
-
   for i in $(expend_num $@); do
     color_msg 38 "Deploying ${site_userip[$i]}..."
-    ${SSH} -p ${site_port[$i]} -t ${site_userip[$i]} "sudo mv ~/cn /usr/local/bin/cn"
+    cmd_to "mkdir -p ~/.cn; mv sites ~/.cn/sites; sudo mv ~/cn /usr/local/bin/cn" ${i}
     if [ $? -ne 0 ]; then
       # Try again without 'sudo'
       ${SSH} -p ${site_port[$i]} -t ${site_userip[$i]} "mv ~/cn /usr/local/bin/cn"
-
-      if [ $? -ne 0 ]; then
-        color_msg 31 "Deploy ${site_userip[$i]} failed! (mv)"
-        exit 1
-      fi
+      check_n_exit "Deploy ${site_userip[$i]} failed! (mv)"
     fi
 
     color_msg 32 "Deploy ${site_userip[$i]} successfully."
