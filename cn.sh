@@ -2165,7 +2165,7 @@ function expend_num()
 #   ssh -p $reverse_port USER@localhost
 function reverse_tunnel()
 {
-  if [ -z $1 ]; then
+  if [ -z $1 ] || [ -z $2 ]; then
     display_usage_rvt
     exit 1
   else
