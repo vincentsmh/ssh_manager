@@ -503,10 +503,11 @@ function display_scp_to()
   color_msg 38 "   - " -n
   color_msg 32 "ct" -n
   color_msg 38 ": cn ct " -n
-  color_msg 33 "file1 [file2] [file3] [...] -t #num1 [#num2] [#num3] [...]"
+  color_msg 33 "file1 [...] -t #num1 [...] [-d PATH]"
   color_msg 38 "     scp file(s) to the given site(s). "
   color_msg 38 "     ex: cn ct file1 file2 -t 3"
   color_msg 38 "     ex: cn ct folder/* -t 3"
+  color_msg 38 "     ex: cn ct folder/* -t 3 -d /tmp/"
 }
 
 function display_scp_from()
@@ -547,7 +548,7 @@ function scp_from()
 }
 
 # Secure copy file to the remote site.
-# Input: file1 file2 ... -t num1 num2 ...
+# Input: file1 file2 ... -t num1 num2 ... -d destination_path
 function scp_to()
 {
   if [ -z "$1" ] || [ -z "$2" ]; then
@@ -555,25 +556,31 @@ function scp_to()
     exit 0
   fi
 
-  files="$1"
-  shift_num=1
-  shift 1
+  local files=""
+  local target_num=""
+  local dest_path=""
+  local arg_status="getting_files"
 
   # Files
   for arg in $@; do
-    if [ "${arg}" != "-t" ]; then
-      files="${files} ${arg}"
-      shift_num=$(( ${shift_num} + 1 ))
+    if [ "${arg}" == "-t" ]; then
+      arg_status="getting_target"
+    elif [ "${arg}" == "-d" ]; then
+      arg_status="getting_dest_path"
     else
-      break
+      if [ "${arg_status}" == "getting_files" ]; then
+        files="${files} ${arg}"
+      elif [ "${arg_status}" == "getting_target" ]; then
+        target_num="${target_num} ${arg}"
+      elif [ "${arg_status}" == "getting_dest_path" ]; then
+        dest_path="${arg}/"
+      fi
     fi
   done
 
-  shift ${shift_num}
-
-  for i in $(expend_num $@); do
+  for i in $(expend_num ${target_num}); do
     if [ "${site_num[$i]}" != "" ]; then
-      scp -r -P ${site_port[$i]} ${files} "${site_userip[$i]}:"
+      scp -r -P ${site_port[$i]} ${files} "${site_userip[$i]}:${dest_path}"
     fi
   done
 
