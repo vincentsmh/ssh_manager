@@ -746,6 +746,24 @@ function add_node()
   done
 }
 
+function read_until()
+{
+  while true; do
+    eval "read -p \"$1: \" $2"
+    eval "if [ \"\$$2\" != \"\" ]; then break; else echo 'Cannot be empty'; fi"
+  done
+}
+
+function add_node_stepbystep()
+{
+  read_until "User" user
+  read_until "IP" ip
+  userip="${user}@${ip}"
+  read -p "Descript: " desc
+  read -p "Port [22]: " port
+  port=${port:-22}
+}
+
 # Display author information
 function display_author()
 {
@@ -2250,7 +2268,15 @@ else
 
   case "$1" in
     [a] )
-      add_node "$2" "$3" "$4"
+      if [ -z "$2" ]; then
+        add_node_stepbystep
+      else
+        userip="$2"
+        desc="$3"
+        port="$4"
+      fi
+
+      add_node "${userip}" "${desc}" "${port}"
       display_sites
       exit 0;;
     [d] )
