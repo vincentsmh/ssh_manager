@@ -1983,7 +1983,7 @@ function list_sites_of_tag()
   print_tag_head "$tag"
 
   for i in ${!site_num[*]}; do
-    if [ "${site_tag[$i]}" == "$tag" ]; then
+    if [ "${site_tag[$i],,}" == "${tag,,}" ]; then
       display_entry $color $i
       color=$((color+1))
 
