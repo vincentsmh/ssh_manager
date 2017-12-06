@@ -726,8 +726,9 @@ function add_node()
 
   while true; do
     echo -n "Add this node to position "
-    color_msg 32 "[$num] " -n
-    read -p "(y/n)" yn
+    color_msg 32 "$num " -n
+    read -p "(y/n) [y] " yn
+    yn=${yn:-y}
 
     case $yn in
       [Yy]* )
