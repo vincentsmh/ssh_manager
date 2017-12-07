@@ -911,7 +911,7 @@ function display_upgrade()
 function display_connect()
 {
   color_msg 38 "   - " -n
-  color_msg 32 "num" -n
+  color_msg 32 "num|string" -n
   color_msg 38 ": cn #num|string " -n
   color_msg 33 "[o|f|v|r] [port|SSH_Options]"
   color_msg 38 "     ex. cn 2 (SSH to site 2)"
@@ -1733,15 +1733,6 @@ function connect_by()
   local protocol="$1"
   local num=$2
 
-  if [ $(is_integer ${num}) -ne 1 ]; then
-    # Find all sites with keywords and ask the user to choose one.
-    shift 1
-    display_sites $@
-    ask_question "Select a site (number): "
-    connect_by "${protocol}" ${ans}
-    exit 0
-  fi
-
   increase_feq ${num}
 
   # SSH
@@ -2261,6 +2252,53 @@ function interactive_modify_userip()
   display_one_site ${site}
 }
 
+function display_sites_by_num()
+{
+  local color=32
+  print_head_tail "head" "${LISTING_MODE}"
+  for i in $@; do
+    display_entry $color $i "${LISTING_MODE}"
+    local color=$((color+1))
+
+    if [ $color -eq 38 ]; then
+      local color=32
+    fi
+  done
+
+  print_head_tail "tail" "${LISTING_MODE}"
+  echo -e
+}
+
+function keyword_to_nodenum()
+{
+  local num_found=0
+  local target_found=""
+  for i in ${!site_num[*]}; do
+    for keyword in $@; do
+      local exists_desc=$(echo "${site_desc[$i],,}" | grep -c "${keyword,,}")
+
+      if [ "${exists_desc}" != "0" ]; then
+        num_found=$(( ${num_found} + 1 ))
+
+        if [ "${target_found}" == "" ]; then
+          target_found="$i"
+        else
+          target_found="${target_found} $i"
+        fi
+      fi
+    done
+  done
+
+  if [ ${num_found} -eq 1 ]; then
+    num=${target_found}
+  else
+    display_sites_by_num ${target_found}
+    local default=$(echo ${target_found} | awk -F " " {'print $1'})
+    ask_question "Which one you want to connect? [${default}] " ${default}
+    num=${ans}
+  fi
+}
+
 # main()
 if [ -z "$1" ]; then
   display_usage
@@ -2437,24 +2475,24 @@ else
   esac
 
   if ! is_number $1; then
-    echo -ne "Bad argument: "
-    color_msg 33 $1
-    exit 1
+    keyword_to_nodenum "$1"
+  else
+    num="$1"
   fi
 
   if [ -z "$2" ]; then
-    connect_by "ssh" $@
+    shift 1
+    connect_by "ssh" ${num} $@
     exit $?
   else
     case "$2" in
       [f] )
-        connect_by "ftp" $1 "$3" ;;
+        connect_by "ftp" ${num} "$3" ;;
       [v] )
-        connect_by "vncviewer" $1 "$3" ;;
+        connect_by "vncviewer" ${num} "$3" ;;
       [r] )
-        connect_by "rdesktop" $1 "$3" ;;
+        connect_by "rdesktop" ${num} "$3" ;;
       [o] )
-        num=$1
         shift 2
         connect_by "ssh" ${num} $@ ;;
       * )
