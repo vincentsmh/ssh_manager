@@ -15,6 +15,7 @@ DEFAULT_MAX_TAG_LEN=3
 CHECKOUT_FOLDER=".cn_upgrade"
 ENABLE_AUTO_CHECK_UPDATE=1
 SSH="ssh -o StrictHostKeyChecking=no"
+SCP="scp -o StrictHostKeyChecking=no"
 
 # Color function
 # Input: $1->color, $2->message, $3->newline or not
@@ -534,7 +535,7 @@ function scp_from()
 
   for i in $(expend_num $@); do
     if [ "${site_num[$i]}" != "" ]; then
-      scp -r -P "${site_port[$i]}" "${site_userip[$i]}:$file" .
+      ${SCP} -r -P "${site_port[$i]}" "${site_userip[$i]}:$file" .
     fi
   done
 
@@ -586,7 +587,7 @@ function scp_to()
 
   for i in $(expend_num ${target_num}); do
     if [ "${site_num[$i]}" != "" ]; then
-      scp -r -P ${site_port[$i]} ${files} "${site_userip[$i]}:${dest_path}"
+      ${SCP} -r -P ${site_port[$i]} ${files} "${site_userip[$i]}:${dest_path}"
     fi
   done
 
