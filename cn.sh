@@ -578,6 +578,12 @@ function scp_to()
     fi
   done
 
+  if [ "${target_num}" == "" ]; then
+    color_msg 31 "Bad arguments"
+    display_scp_to
+    exit 1
+  fi
+
   for i in $(expend_num ${target_num}); do
     if [ "${site_num[$i]}" != "" ]; then
       scp -r -P ${site_port[$i]} ${files} "${site_userip[$i]}:${dest_path}"
