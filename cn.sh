@@ -2273,6 +2273,7 @@ function keyword_to_nodenum()
 {
   local num_found=0
   local target_found=""
+  num=""
   for i in ${!site_num[*]}; do
     for keyword in $@; do
       local exists_desc=$(echo "${site_desc[$i],,}" | grep -c "${keyword,,}")
@@ -2291,7 +2292,7 @@ function keyword_to_nodenum()
 
   if [ ${num_found} -eq 1 ]; then
     num=${target_found}
-  else
+  elif [ ${num_found} -gt 1 ]; then
     display_sites_by_num ${target_found}
     local default=$(echo ${target_found} | awk -F " " {'print $1'})
     ask_question "Which one you want to connect? [${default}] " ${default}
@@ -2476,6 +2477,10 @@ else
 
   if ! is_number $1; then
     keyword_to_nodenum "$1"
+    if [ "${num}" == "" ]; then
+      color_msg 31 "Not found"
+      exit 1
+    fi
   else
     num="$1"
   fi
