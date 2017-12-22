@@ -69,7 +69,6 @@ function strlen()
 #       be a default value when the user press ENTER without input any value.
 function ask_question()
 {
-  echo -e
   if [ ! -z $2 ]; then
     local option="$2"
   fi
@@ -572,7 +571,8 @@ function scp_to()
       if [ "${arg_status}" == "getting_files" ]; then
         files="${files} ${arg}"
       elif [ "${arg_status}" == "getting_target" ]; then
-        target_num="${target_num} ${arg}"
+        to_node_num "${arg}"
+        target_num="${target_num} ${num}"
       elif [ "${arg_status}" == "getting_dest_path" ]; then
         dest_path="${arg}/"
       fi
@@ -2302,8 +2302,25 @@ function keyword_to_nodenum()
   elif [ ${num_found} -gt 1 ]; then
     display_sites_by_num ${target_found}
     local default=$(echo ${target_found} | awk -F " " {'print $1'})
-    ask_question "Which one you want to connect? [${default}] " ${default}
+    echo -ne "Choose your target for "
+    color_msg 32 "$@" -n
+    ask_question " ? [${default}] " ${default}
     num=${ans}
+  fi
+}
+
+# If the argument is a string, convert it to a node number. The converted
+# result will be stored in `num`.
+function to_node_num()
+{
+  if ! is_number "$1"; then
+    keyword_to_nodenum "$1"
+    if [ "${num}" == "" ]; then
+      color_msg 31 "Not found"
+      exit 1
+    fi
+  else
+    num="$1"
   fi
 }
 
@@ -2482,15 +2499,7 @@ else
       exit 0;;
   esac
 
-  if ! is_number $1; then
-    keyword_to_nodenum "$1"
-    if [ "${num}" == "" ]; then
-      color_msg 31 "Not found"
-      exit 1
-    fi
-  else
-    num="$1"
-  fi
+  to_node_num "$1"
 
   if [ -z "$2" ]; then
     shift 1
