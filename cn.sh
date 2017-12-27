@@ -562,14 +562,14 @@ function scp_to()
   local arg_status="getting_files"
 
   # Files
-  for arg in $@; do
+  for arg in "$@"; do
     if [ "${arg}" == "-t" ]; then
       arg_status="getting_target"
     elif [ "${arg}" == "-d" ]; then
       arg_status="getting_dest_path"
     else
       if [ "${arg_status}" == "getting_files" ]; then
-        files="${files} ${arg}"
+        files="${files} \"${arg}\""
       elif [ "${arg_status}" == "getting_target" ]; then
         to_node_num "${arg}"
         target_num="${target_num} ${num}"
@@ -587,7 +587,9 @@ function scp_to()
 
   for i in $(expend_num ${target_num}); do
     if [ "${site_num[$i]}" != "" ]; then
-      ${SCP} -r -P ${site_port[$i]} ${files} "${site_userip[$i]}:${dest_path}"
+      local scp_cmd="${SCP} -r -P ${scp_cmd} ${site_port[$i]}"
+      scp_cmd="${scp_cmd} ${files} ${site_userip[$i]}:${dest_path}"
+      eval ${scp_cmd}
     fi
   done
 
