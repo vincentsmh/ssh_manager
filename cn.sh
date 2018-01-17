@@ -533,8 +533,9 @@ function scp_from()
   shift 1
 
   for i in $(expend_num $@); do
-    if [ "${site_num[$i]}" != "" ]; then
-      ${SCP} -r -P "${site_port[$i]}" "${site_userip[$i]}:$file" .
+    to_node_num "$i"
+    if [ "${site_num[$num]}" != "" ]; then
+      ${SCP} -r -P "${site_port[$num]}" "${site_userip[$num]}:$file" .
     fi
   done
 
