@@ -649,7 +649,8 @@ function reg_key()
     color_msg 32 "$ip" -n
     color_msg 38 "] ..."
 
-    local cmd="mkdir -p ~/.ssh; cat id_rsa.pub >> ~/.ssh/authorized_keys; rm -rf id_rsa.pub"
+    local cmd="mkdir -p ~/.ssh; cat id_rsa.pub >> ~/.ssh/authorized_keys"
+    cmd="${cmd}; chmod 600 ~/.ssh/authorized_keys; rm -rf id_rsa.pub"
     ${SSH} -p ${site_port[$sn]} ${site_userip[$sn]} "$cmd"
     check_n_exit $? "Register public key failed"
 
