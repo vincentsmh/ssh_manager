@@ -17,6 +17,16 @@ ENABLE_AUTO_CHECK_UPDATE=1
 SSH="ssh -o StrictHostKeyChecking=no"
 SCP="scp -o StrictHostKeyChecking=no"
 
+function _check_data()
+{
+  if [ ! -f $DATA ]; then
+    echo -e "No site data exist for this user"
+    echo -e "Please make sure the deployment is correct"
+    echo -e
+    exit 1
+  fi
+}
+
 # Color function
 # Input: $1->color, $2->message, $3->newline or not
 function color_msg
@@ -160,6 +170,8 @@ function default_len()
 # Read all sites data into 'sites'
 function read_sites()
 {
+  _check_data
+
   local len=0
   local read_max=0
   num_of_sites=0
@@ -207,6 +219,7 @@ function read_sites()
 
 function export_to_file()
 {
+  _check_data
   echo "$max_num_len"_"$max_userip_len"_"$max_port_len"_"$max_desc_len"_"$max_status_len"_"$max_feq_len"_"$max_tag_len"_"$lst_ckday" > $DATA
 
   for i in ${!site_num[*]}; do
@@ -1794,6 +1807,7 @@ function find_this_utility()
 # Input: $1,2,...->site number
 function deploy_to()
 {
+  _check_data
   if [ -z $1 ]; then
     display_deploy_usage
     exit 0
