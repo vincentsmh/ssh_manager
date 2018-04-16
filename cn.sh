@@ -636,12 +636,21 @@ function reg_key()
     exit 0
   fi
 
-  local pk=$(find_pk)
+  while true; do
+    local pk=$(find_pk)
 
-  if [ "$pk" == "" ]; then
-    color_msg 31 "No public key found. Please generate your key-pair first."
-    return 1
-  fi
+    if [ "$pk" == "" ]; then
+      color_msg 31 "No public key found. Please generate your key-pair first."
+      ask_question "Do you want to generate now? [y]" "y"
+      if [ "${ans}" == "y" ] || [ "${ans}" == "Y" ]; then
+        ssh-keygen
+      else
+        return 0
+      fi
+    else
+      break
+    fi
+  done
 
   local sn=""
   for sn in $(expend_num $@); do
