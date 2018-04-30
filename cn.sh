@@ -601,7 +601,7 @@ function scp_to()
 
   for i in $(expend_num ${target_num}); do
     if [ "${site_num[$i]}" != "" ]; then
-      local scp_cmd="${SCP} -r -P ${scp_cmd} ${site_port[$i]}"
+      local scp_cmd="${SCP} -r -P ${site_port[$i]}"
       scp_cmd="${scp_cmd} ${files} ${site_userip[$i]}:${dest_path}"
       eval ${scp_cmd}
     fi
