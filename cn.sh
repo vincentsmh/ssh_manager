@@ -1882,7 +1882,7 @@ function checkout_cn()
   cd $CHECKOUT_FOLDER
   git clone https://github.com/vincentsmh/ssh_script &> /dev/null
 
-  local context=$( head -5 ssh_script/cn.sh )
+  local context=$( head -10 ssh_script/cn.sh )
   new_ver=$( echo "$context" | grep "VERSION=" | awk -F "\"" {'print $2'})
   new_lst_upd=$( echo "$context" | grep "LAST_UPDATE=" | awk -F "\"" {'print $2'})
 }
