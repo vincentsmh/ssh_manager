@@ -2393,8 +2393,8 @@ else
       exit 0;;
     [p] )
       shift 1
-      ping_site $@
-      display_sites
+      ping_site $1
+      display_one_site $1
       exit 0;;
     [r] )
       shift 1
