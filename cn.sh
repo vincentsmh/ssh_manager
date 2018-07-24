@@ -626,7 +626,7 @@ function find_pk()
   fi
 }
 
-# reg_key(site_number1, site_number2, ...) -> 0 | 1
+# reg_key site_number1, site_number2, ... -> 0 | 1
 #   This function will regiester local's public key (id_rsa.pub) to the remote
 #   site.
 function reg_key()
@@ -654,15 +654,22 @@ function reg_key()
 
   local sn=""
   for sn in $(expend_num $@); do
-    local ip=$(find_ip $sn)
-    check_n_exit $? "[$sn] does not exist."
+    if [ $(is_integer ${sn}) -eq 1 ]; then
+      num=$sn
+    else
+      echo -e "sn: $sn"
+      to_node_num "${sn}"
+    fi
+
+    local ip=$(find_ip $num)
+    check_n_exit $? "[$num] does not exist."
 
     # Copy local public key to the remote site.
     echo -e
     color_msg 38 "Copying local public key to [" -n
     color_msg 32 "$ip" -n
     color_msg 38 "] ..."
-    scp_to "$pk" -t "$sn"
+    scp_to "$pk" -t "$num"
     check_n_exit $? "Copy file to $ip failed."
 
     # Cat public key to remote site's authorized_key
@@ -673,7 +680,7 @@ function reg_key()
 
     local cmd="mkdir -p ~/.ssh; cat id_rsa.pub >> ~/.ssh/authorized_keys"
     cmd="${cmd}; chmod 600 ~/.ssh/authorized_keys; rm -rf id_rsa.pub"
-    ${SSH} -p ${site_port[$sn]} ${site_userip[$sn]} "$cmd"
+    ${SSH} -p ${site_port[$num]} ${site_userip[$num]} "$cmd"
     check_n_exit $? "Register public key failed"
 
     echo -e
@@ -845,11 +852,18 @@ function display_reg_usage()
   color_msg 38 "   - " -n
   color_msg 32 "r" -n
   color_msg 38 ": cn r " -n
-  color_msg 33 "#num"
-  color_msg 38 "     Register public key to site #num. You would be asked to input password "
-  color_msg 38 "     for several times. After the registration, you can connect to that "
-  color_msg 38 "     site without type password."
+  color_msg 33 "[#num | STRING] ..."
+  color_msg 38 "     + " -n
+  color_msg 35 "#num:" -n
+  color_msg 38 "Register public key to site #num."
+  color_msg 38 "     + " -n
+  color_msg 35 "STRING:" -n
+  color_msg 38 "Register public key to site with the patten STRING"
+  color_msg 38 "     You would be asked to input password several times. After the"
+  color_msg 38 "     registration, you can connect to that site without type password."
   color_msg 38 "     ex: cn r 3"
+  color_msg 38 "     ex: cn r 3 5"
+  color_msg 38 "     ex: cn r maas zuul"
 }
 
 function display_deploy_usage()
@@ -2204,7 +2218,11 @@ function expend_num()
   if [ $(echo -e "$1" | grep -c "-") -ne 0 ]; then
     local start=$(echo "$1" | cut -d"-" -f1)
     local end=$(echo "$1" | cut -d"-" -f2)
-    seq -s " " ${start} ${end}
+    if [ $(is_integer ${start}) -ne 1 ] || [ $(is_integer ${end}) -ne 1 ]; then
+      echo "$@"
+    else
+      seq -s " " ${start} ${end}
+    fi
   else
     echo "$@"
   fi
