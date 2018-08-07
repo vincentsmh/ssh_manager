@@ -1167,7 +1167,7 @@ function find_max_len()
   local len=0
 
   if [ $1 -eq 1 ];then
-    max_num_len=0
+    max_num_len=$DEFAULT_MAX_NUM_LEN
 
     for i in ${!site_num[*]}; do
       len=$(strlen "${site_num[$i]}")
@@ -1179,7 +1179,7 @@ function find_max_len()
   fi
 
   if [ $2 -eq 1 ];then
-    max_userip_len=0
+    max_userip_len=$DEFAULT_MAX_USERIP_LEN
 
     for i in ${!site_userip[*]}; do
       len=$(strlen "${site_userip[$i]}")
@@ -1191,7 +1191,7 @@ function find_max_len()
   fi
 
   if [ $3 -eq 1 ];then
-    max_port_len=0
+    max_port_len=$DEFAULT_MAX_PORT_LEN
 
     for item in ${site_port[*]}; do
       len=$(strlen "$item")
@@ -1203,7 +1203,7 @@ function find_max_len()
   fi
 
   if [ $4 -eq 1 ];then
-    max_desc_len=0
+    max_desc_len=$DEFAULT_MAX_DESC_LEN
 
     for i in ${!site_desc[*]}; do
       len=$(strlen "${site_desc[$i]}")
@@ -1215,7 +1215,7 @@ function find_max_len()
   fi
 
   if [ $5 -eq 1 ]; then
-    max_tag_len=0
+    max_tag_len=$DEFAULT_MAX_TAG_LEN
 
     for i in ${!site_tag[*]}; do
       len=$(strlen "${site_tag[$i]}")
@@ -1227,7 +1227,7 @@ function find_max_len()
   fi
 
   if [ $6 -eq 1 ]; then
-    max_status_len=0
+    max_status_len=$DEFAULT_MAX_STATUS_LEN
 
     for i in ${!site_status[*]}; do
       len=$(strlen "${site_status[$i]}")
