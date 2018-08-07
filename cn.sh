@@ -2284,6 +2284,21 @@ function ssh_ping_all()
   ssh_ping ${all_nodes}
 }
 
+function interactive_modify_desc()
+{
+  display_md_usage
+  echo -e
+  display_sites
+  echo -ne  "Choose modifying site: "
+  read site
+  display_one_site ${site}
+  local old_desc="${site_desc[$site]}"
+  echo -ne "New description: "
+  read new_desc
+  modify_field 1 ${site} "${new_desc}"
+  display_one_site ${site}
+}
+
 function interactive_modify_userip()
 {
   display_mu_usage
@@ -2496,8 +2511,13 @@ else
 
       exit 0;;
     md )
-      modify_field 1 $2 "$3"
-      display_sites
+      if [ -z $2 ]; then
+        interactive_modify_desc
+      else
+        modify_field 1 $2 "$3"
+        display_sites
+      fi
+
       exit 0;;
     mp )
       modify_field 2 $2 "$3"
