@@ -1529,12 +1529,18 @@ function ping_google_dns()
   echo -e
   echo -ne "Ping Google ... "
   local wt=$(find_ping_wait_time)
-  ping -c 1 -W ${wt} 8.8.8.8 2>1 &> /dev/null
-  if [ $? -eq 0 ]; then
-    color_msg 32 "Success"
+  local p_result="$(ping -c 1 -W ${wt} 8.8.8.8)"
+  local status=$(echo "${p_result}" | grep -c "from")
+
+  if [ "${status}" == "0" ]; then
+    color_msg 31 "Fail" 
   else
-    color_msg 31 "Fail"
+    local rt_time=$(echo "${p_result}" | \
+        awk -F "time=" {'print $2'})
+    rt_time=${rt_time//[$'\t\r\n']}
+    color_msg 32 "Success (${rt_time})"
   fi
+
   echo -e
 }
 
