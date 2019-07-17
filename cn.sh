@@ -2349,7 +2349,9 @@ function keyword_to_nodenum()
   num=""
   for i in ${!site_num[*]}; do
     for keyword in $@; do
-      local exists_desc=$(echo "${site_desc[$i],,}" | grep -c "${keyword,,}")
+      local lowercase_kw=$(echo ${keyword} | tr "[A-Z]" "[a-z]")
+      local lowercase_sd=$(echo ${site_desc[$i]} | tr "[A-Z]" "[a-z]")
+      local exists_desc=$(echo "${lowercase_sd}" | grep -c "${lowercase_kw}")
 
       if [ "${exists_desc}" != "0" ]; then
         num_found=$(( ${num_found} + 1 ))
