@@ -1493,14 +1493,15 @@ function change_site_status()
 function ping_site()
 {
   for i in $(expend_num $@); do
-    local ip=$(find_ip $i)
+    to_node_num "$i"
+    local ip=$(find_ip $num)
     local wt=$(find_ping_wait_time)
     ping -c 1 -W $wt $ip >> /dev/null
 
     if [ $? -eq 0 ]; then
-      change_site_status $i "ping" "On"
+      change_site_status $num "ping" "On"
     else
-      change_site_status $i "ping" "Off"
+      change_site_status $num "ping" "Off"
     fi
   done
 
@@ -1878,10 +1879,11 @@ function cmd_to()
   shift 1
 
   for i in $(expend_num $@); do
-    ip=$(find_ip $i)
+    to_node_num "$i"
+    ip=$(find_ip $num)
     color_msg 32 "Send command to " -n
     color_msg 33 "$ip"
-    ${SSH} -p ${site_port[$i]} -t ${site_userip[$i]} "$cmd"
+    ${SSH} -p ${site_port[$num]} -t ${site_userip[$num]} "$cmd"
   done
 }
 
