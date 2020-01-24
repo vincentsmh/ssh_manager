@@ -104,20 +104,14 @@ function check_empty()
 }
 
 # Main 
-# Check root privilege for deployment
-if [ "$(id -u)" != "0" ]; then
-  color_msg 38 "Need " -n
-  color_msg 31 "root " -n
-  color_msg 38 "privilege."
-  echo -e
-  exit 1
-fi
 
 ## Deploy 'cn' script
 DEPLOY_FOLDER="/usr/local/bin"
-mkdir -p $DEPLOY_FOLDER
-cp cn.sh $DEPLOY_FOLDER/cn
-chmod 755 $DEPLOY_FOLDER/cn
+sudo mkdir -p $DEPLOY_FOLDER
+check_n_exit $? "Deploy binary failed"
+sudo cp cn.sh $DEPLOY_FOLDER/cn
+check_n_exit $? "Deploy binary failed"
+sudo chmod 755 $DEPLOY_FOLDER/cn
 check_n_exit $? "Deploy binary failed"
 color_msg 32 "Deploy binary successfully"
 
