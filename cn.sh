@@ -1458,9 +1458,9 @@ function uninstall()
 function find_ping_wait_time()
 {
   if [ "$(is_osx)" == "1" ]; then
-    echo "1500"
+    echo "10000"
   else
-    echo "1"
+    echo "10"
   fi
 }
 
@@ -1528,7 +1528,7 @@ function ping_all_sites()
 function ping_google_dns()
 {
   echo -e
-  echo -ne "Ping Google ... "
+  echo -ne "Ping Google for DNS test ... "
   local wt=$(find_ping_wait_time)
   local p_result="$(ping -c 1 -W ${wt} 8.8.8.8)"
   local status=$(echo "${p_result}" | grep -c "from")
@@ -1756,7 +1756,7 @@ function reset_feq()
 # Check if the system is OS X
 function is_osx()
 {
-  check=$(uname -a | grep -c Mac)
+  check=$(uname -a | grep -c Darwin)
   echo "$check"
 }
 
