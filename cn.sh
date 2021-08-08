@@ -455,6 +455,7 @@ function display_sites()
       local keyword_found=0
 
       for keyword in $@; do
+        echo "Keyword: ${keyword,,}"
         local exists_userip=$(echo "${site_userip[$i],,}" | grep -c "${keyword,,}")
         local exists_port=$(echo "${site_port[$i],,}" | grep -c "${keyword,,}")
         local exists_desc=$(echo "${site_desc[$i],,}" | grep -c "${keyword,,}")
@@ -2250,7 +2251,8 @@ function reverse_tunnel()
     shift 1
   fi
 
-  for num in $@; do
+  for i in $@; do
+    to_node_num "$i"
     ${SSH} -NfR ${reverse_port}:localhost:${site_port[$num]} \
       ${site_userip[$num]}
   done
