@@ -912,6 +912,17 @@ function display_add_usage()
   color_msg 38 "     ex: cn a user@127.0.0.1 \"Description of the site.\" 2222"
 }
 
+function display_backup_usage()
+{
+  color_msg 38 "   - " -n
+  color_msg 32 "bk" -n
+  color_msg 38 ": cn bk " -n
+  color_msg 33 "#dir1 [#dir2 ...] -t #site1 [#site2 #site3 ...] [-d dest_path]"
+  color_msg 38 "     Backup folder to site(s)"
+  color_msg 38 "     ex: cn bk bk_dir1 -t 3"
+  color_msg 38 "     ex: cn bk bk_dir2 bk_dir3 -t site1 site2 -d working/path"
+}
+
 function display_del_usage()
 {
   color_msg 38 "   - " -n
@@ -2396,6 +2407,64 @@ function to_node_num()
   fi
 }
 
+function backup_folder()
+{
+  if [ -z "$1" ] || [ -z "$2" ]; then
+    display_backup_usage
+    exit 0
+  fi
+
+  local files=""
+  local target_num=""
+  local dest_path=""
+  local arg_status="getting_dirs"
+
+  # Files
+  for arg in "$@"; do
+    if [ "${arg}" == "-t" ]; then
+      arg_status="getting_target"
+    elif [ "${arg}" == "-d" ]; then
+      arg_status="getting_dest_path"
+    else
+      if [ "${arg_status}" == "getting_dirs" ]; then
+        local r="$(realpath ${arg})"
+        local bk_file="$(basename $r).tgz"
+        rm -rf ${bk_file}
+        tar zcvf ${bk_file} ${arg}
+        if [ $? -ne 0 ]; then
+            color_msg 31 "Fail to tar ${arg}"
+            exit 1
+        fi
+        files="${files} \"${bk_file}\""
+      elif [ "${arg_status}" == "getting_target" ]; then
+        to_node_num "${arg}"
+        target_num="${target_num} ${num}"
+      elif [ "${arg_status}" == "getting_dest_path" ]; then
+        dest_path="${arg}/"
+      fi
+    fi
+  done
+
+  if [ "${target_num}" == "" ]; then
+    color_msg 31 "Bad arguments"
+    display_backup_usage
+    exit 1
+  fi
+
+  for i in $(expend_num ${target_num}); do
+    if [ "${site_num[$i]}" != "" ]; then
+      local scp_cmd="${SCP} -r -P ${site_port[$i]}"
+      scp_cmd="${scp_cmd} ${files} ${site_userip[$i]}:${dest_path}"
+      eval ${scp_cmd}
+      if [ $? -ne 0 ]; then
+          color_msg 31 "Fail to backup ${files} to ${site_userip[$i]}"
+      fi
+    fi
+  done
+
+  rm -rf ${files}
+}
+
 # main()
 if [ -z "$1" ]; then
   display_usage
@@ -2474,6 +2543,10 @@ else
 
       add_node "$2" "$3" "$4"
       reg_key $?
+      exit 0;;
+    bk )
+      shift 1
+      backup_folder "$@"
       exit 0;;
     cf )
       shift 1
