@@ -2462,7 +2462,8 @@ function backup_folder()
     fi
   done
 
-  rm -rf ${files}
+  local cmd="rm -rf ${files}"
+  eval ${cmd}
 }
 
 # main()
